@@ -11,8 +11,8 @@ start afresh.
 
 What features can be expected?
 ------------------------------
-[ ] Time in/out of each volunteer (like a time clock)
-[ ] Track which activity (ministry) and shift (service) they worked
-[ ] Reports for each activity and shift, birthdays, staff attendance
-[ ] Individual online account management
++ Time in/out of each volunteer (like a time clock)
++ Track which activity (ministry) and shift (service) they worked
++ Reports for each activity and shift, birthdays, staff attendance
++ Individual online account management
 
