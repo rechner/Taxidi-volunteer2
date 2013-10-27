@@ -1,0 +1,18 @@
+/* bootstrap-specific */
+body {
+    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+  
+      /* IE10 Consumer Preview */ 
+    background-image: -ms-linear-gradient(top, #4C9ADE 0%, #EFEFEF 100%);
+    /* Mozilla Firefox */ 
+    background-image: -moz-linear-gradient(top, #4C9ADE 0%, #EFEFEF 100%);
+    /* Opera */ 
+    background-image: -o-linear-gradient(top, #4C9ADE 0%, #EFEFEF 100%);
+    /* Webkit (Safari/Chrome 10) */ 
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #4C9ADE), color-stop(1, #EFEFEF));
+    /* Webkit (Chrome 11+) */ 
+    background-image: -webkit-linear-gradient(top, #4C9ADE 0%, #EFEFEF 100%);
+    /* W3C Markup, IE10 Release Preview */
+    background-image: linear-gradient(to bottom, #4C9ADE 0%, #EFEFEF 100%);
+    background-color: #4C9ADE;
+}
