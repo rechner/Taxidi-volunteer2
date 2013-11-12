@@ -1,7 +1,11 @@
 {% extends "layout.html" %}
 {% block title %}Hello, World!{% endblock %}
+{% import 'navbar.html' as navbar %}
 {% block body %}
-  <div>
-    <h1>Hello, world!</h1>
+  <div class="container">
+    {{ navbar.top('Volunteers', 'index') }}    
+    <div class="well opaque">
+      <h1>Hello, world!</h1>
+    </div>
   </div>
 {% endblock %}

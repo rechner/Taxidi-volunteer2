@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html html lang="en">
+<html lang="en">
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
     <title>{% block title %}{% endblock %}</title>
@@ -8,10 +8,11 @@
     <!-- javascript -->
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/mobiledetect.js') }}"></script>
     
     <!-- css -->
-    <link href="{{ url_for('static', filename='css/bootstrap.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap.css') }}" rel="stylesheet">
   </head>
   <body>
     <!--[if lt IE 7]>

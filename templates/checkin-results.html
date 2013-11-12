@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block title %}Hello, World!{% endblock %}
+{% block body %}
+  <div class="container">   
+    <div class="well opaque">
+      
+      <div class="row">
+        <div class="col-md-3">
+            <a href="/timeclock"
+               class="btn btn-lg btn-primary">Go Back <span class="glyphicon glyphicon-arrow-left"></span></a>
+        </div>
+        <div class="col-md-6">
+          <h2 class="text-center">Dreamteam Check-in</h2><br>
+        </div>
+      </div>
+      
+
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <p class="text-center">
+            Flash message here.  Long instructions and stuff, click some things
+          and what not and then you'll be there.  Otherwise hit back.</p>
+        </div>
+      </div>
+      
+      
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Home Phone</th>
+                <th>Mobile Phone</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for result in results %}
+              <tr onclick="document.location = '/select-activity?id={{ result.id }}';">
+                <td>{{ result.name }}</td>
+                <td>{{ result.lastname }}</td>
+                <td>{{ result.phone }}</td>
+                <td>{{ result.phone }}</td>
+                <td>
+                  <a class="btn btn-primary btn-md" role="button"
+                     href="/select-activity?id={{ result.id }}&search={{ search }}">
+                      Check in <span class="glyphicon glyphicon-arrow-right"></span>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+          
+    </div>
+  </div>
+{% endblock %}

@@ -16,3 +16,8 @@ body {
     background-image: linear-gradient(to bottom, #4C9ADE 0%, #EFEFEF 100%);
     background-color: #4C9ADE;
 }
+
+html {
+    /* Make the gradient stretch the entire length of the page */
+    min-height: 100%;
+}
