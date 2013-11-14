@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+{% block title %}Select Activity{% endblock %}
+{% block body %}
+
+  <!-- Modal -->
+  <div class="modal fade" id="timeoutModal" tabindex="-1" role="dialog" 
+       aria-labelledby="timeoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="timeoutModalLabel">Are you still there?</h4>
+        </div>
+        <div class="modal-body">
+          It looks like you've been stuck here for quite some time.
+          Press 'Continue' to keep your session open.  Otherwise I'll go back
+          to the search screen in <strong><span id="timer_value"></span></strong> seconds.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onClick="reset_interval();"
+            data-dismiss="modal">Continue</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  <div class="container">   
+    <div class="well opaque">
+      
+      <div class="row">
+        <div class="col-md-3">
+            <a href="#" onClick="history.back();"
+               class="btn btn-lg btn-primary btn-block">Go Back <span class="glyphicon glyphicon-arrow-left"></span></a>
+        </div>
+        <div class="col-md-3 col-md-offset-6">
+            <a href="/timeclock" class="btn btn-lg btn-block btn-danger">Start Over <span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+      </div>
+      
+      <div class="container">
+        <h2 class="text-center">Custom Text Title</h2><br>
+      </div>
+      
+      {% if error %}
+      <div class="alert alert-danger text-center lead">
+        <strong>Error: </strong> {{ error }}
+      </div>
+      {% endif %}
+      
+      <hr>
+      
+      <div id="services">
+        <form role="form" action="/checkin-confirm" method="POST" name="activity">
+          <input type="hidden" name="search" value="{{ search }}">
+          <input type="hidden" name="id" value="{{ id }}">
+          {% for activity in activities %}
+            <input type="hidden" name="activity" value="{{ activity }}">
+          {% endfor %}
+          {% for service in services %}
+            <input type="hidden" name="service" value="{{ service }}">
+          {% endfor %}
+          
+          <div class="row">
+            <div class="input-large col-md-offset-3 col-md-6">
+              <textarea id="message" name="message" class="textarea-large" rows="4" autofocus></textarea>
+            </div>
+          </div>
+        
+          <hr>
+        
+        <div class="row">
+          <div class="col-md-4 col-md-offset-4">
+            <button type="submit" class="btn btn-primary btn-block btn-lg">Continue <span class="glyphicon glyphicon-arrow-right"></span></button>
+          </div>
+        </div>
+        
+      </form>
+    </div>
+    </div>
+  </div>
+  
+  <script>
+    //set timeout redirect:
+    var timeout = 9999; // 30 second until redirect
+    var timeout_warning = 10; // show warning at 10 seconds
+    
+    function timeout_tick() {
+      timeout--;
+      console.log(timeout);
+      document.getElementById("timer_value").innerHTML = timeout;
+      
+      if (timeout == timeout_warning) {
+        //show the warning modal:
+        $('#timeoutModal').modal('show');
+      }
+      
+      if (timeout == 0) {
+        // Why do I have to specify this /again/?
+        window.location.replace("/timeclock");
+      }      
+    }
+    
+    function reset_interval() {
+      window.clearInterval(timer)
+      timeout = 30;
+      timer = window.setInterval("timeout_tick();", 1000);
+    }
+    
+    $(document).ready(function() {
+      //FIXME: Set initial values     
+  
+      $("input:checkbox").change(function() {
+        if ($(this).is(":checked")) {
+          $(this).parent().attr("class", "btn btn-success btn-block btn-lg");
+        } else {
+          $(this).parent().attr("class", "btn btn-default btn-block btn-lg");
+        }      
+      });
+      
+    });
+    
+    if (!jQuery.browser.mobile) {
+      /* mobile browsers don't handle modals very well, so we'll just
+         silently ignore the timeout function */
+      var timer = window.setInterval("timeout_tick();", 1000);
+    }
+  </script>
+{% endblock %}

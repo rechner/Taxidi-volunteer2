@@ -34,7 +34,7 @@ def timeclock():
       results=({'id' : 1234, 'name' : 'John', 'lastname' : 'Volunteer', 'phone' : '(317) 555-5555'},
                {'id' : 1234, 'name' : 'John', 'lastname' : 'Volunteer', 'phone' : '(317) 555-5555'})
     )
-  return render_template('checkin-search.html', error="Something went wrong!")
+  return render_template('checkin-search.html', error=None)
   
 @app.route('/timeclock-search')
 def timeclockSearch():
@@ -66,10 +66,15 @@ def selectServices():
     return selectActivity(error="You must pick at least one activity")
   return render_template('checkin-services.html', search=search, activities=activities)
   
-@app.route('/checkin-confirm', methods=['GET'])
+@app.route('/checkin-note', methods=['GET'])
+def checkinNote():
+  return render_template('checkin-note.html')
+  
+@app.route('/checkin-confirm', methods=['GET', 'POST'])
 def checkinConfirm():
-  return str(request.args.getlist("service"))
-  #return render_template('checkin-confirm.html')
+  #~ return str(request.args.getlist("service"))
+  #~ return render_template('checkin-confirm.html')
+  return render_template('checkin-confirm.html')
 
 #~ @app.before_request
 #~ def before_request():

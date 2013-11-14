@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}Select Activity{% endblock %}
+{% block body %}
+
+  <div class="container">   
+    <div class="well opaque">
+      
+      <div class="container">
+        <h2 class="text-center">Check-in Complete</h2><br>
+      </div>
+      
+      {% if error %}
+      <div class="alert alert-danger text-center lead">
+        <strong>Error: </strong> {{ error }}
+      </div>
+      {% endif %}
+      
+      <div id="confirm">
+        
+        <div class="row">
+          <div class="col-md-6 col-md-offset-3">
+            <span class="lead">Done! Show some confirm message here, and maybe ask if you
+            want to tidthe today, otherwise sending you back to the search
+            in <strong><span id="timer_value"></span></strong> seconds.</span>
+          </div>
+        </div>
+        
+        <hr>
+       
+        <div class="row">
+          <div class="col-md-4 col-md-offset-2">
+            <button type="submit" class="btn btn-success btn-block btn-lg">
+              <span class="glyphicon glyphicon-check"></span> Return to Search</button>
+          </div>
+          <div class="col-md-4 col-md-offset1">
+            <a href="https://www.paypal.com/us/cgi-bin/webscr?cmd=_flow&SESSION=sZ3OMg9wSFlFxM8LraYlbdMp1n-ideuoImPUy9sOPjjdaaGm9Mf1ynTC6Pq&dispatch=5885d80a13c0db1f8e263663d3faee8def8934b92a630e40b7fef61ab7e9fe63&cancel_return=http://localhost:5000/checkin-confirm" 
+               class="btn btn-info btn-block btn-lg" target="_blank">
+              <span class="glyphicon glyphicon-usd"></span> Donate</a>
+          </div>
+        </div>
+        
+    </div>
+    </div>
+  </div>
+  
+  <script>
+    //set timeout redirect:
+    var timeout = 1000; // 30 second until redirect
+    var timeout_warning = 20; // show warning at 10 seconds
+    
+    function timeout_tick() {
+      timeout--;
+      document.getElementById("timer_value").innerHTML = timeout;
+      
+      if (timeout == timeout_warning) {
+        //show the warning modal:
+        $('#timeoutModal').modal('show');
+      }
+      
+      if (timeout == 0) {
+        window.location.replace("/timeclock");
+      }      
+    }
+
+    
+    if (!jQuery.browser.mobile) {
+      /* mobile browsers don't handle modals very well, so we'll just
+         silently ignore the timeout function */
+      var timer = window.setInterval("timeout_tick();", 1000);
+    }
+  </script>
+{% endblock %}
