@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% import 'timeout.html' as timeout %}
 {% block title %}Select Activity{% endblock %}
 {% block body %}
   <div class="container">   
@@ -15,7 +16,7 @@
       </div>
       
       <div class="container">
-        <h2 class="text-center">Select Services</h2><br>
+        <h1 class="text-center">Select Services</h1><br>
       </div>
       
       <hr>
@@ -28,16 +29,16 @@
         <div id="services">
           <div class="row">
             <div class="col-md-6 col-md-offset-3">
-              <label class="btn btn-default btn-block btn-lg" for="service1">
-                <input id="service1" type="checkbox" name="service" value="2"> <strong>First Service</strong> <small>(08:00 - 10:30)</small>
+              <label class="btn btn-default btn-block btn-lg" for="toggle1">
+                <input id="toggle11" type="checkbox" name="service" value="2"> <strong>First Service</strong> <small>(08:00 - 10:30)</small>
               </label>
             </div>
           </div>
           <br>
           <div class="row">
             <div class="col-md-6 col-md-offset-3">
-              <label class="btn btn-default btn-block btn-lg" for="service2">
-                <input id="service2" type="checkbox" name="service" value="2"> <strong>Second Service</strong> <small>(11:45 - 12:30)</small>
+              <label class="btn btn-default btn-block btn-lg" for="toggle2">
+                <input id="toggle2" type="checkbox" name="service" value="2"> <strong>Second Service</strong> <small>(11:45 - 12:30)</small>
               </label>
             </div>
           </div>
@@ -54,18 +55,5 @@
     </div>
   </div>
   
-  <script>
-    $(document).ready(function() {
-      //FIXME: Set initial values
-      console.log("Set callback");
-      $("input:checkbox").change(function() {
-        if ($(this).is(":checked")) {
-          $(this).parent().attr("class", "btn btn-success btn-block btn-lg");
-        } else {
-          $(this).parent().attr("class", "btn btn-default btn-block btn-lg");
-        }      
-      });
-      
-    });
-  </script>
+{{ timeout.timeout() }}
 {% endblock %}

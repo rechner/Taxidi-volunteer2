@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block title %}Internal Server Error{% endblock %}
+{% block body %}
+    <style>
+      body {
+        padding-top: 30px;
+      }
+    </style>
+    <div class="container">
+      <div class="well opaque">
+        <h1>500 Internal Server Error</h1>
+        <hr>
+        {% with errors = get_flashed_messages(category_filter=["error"]) %}
+          {% if errors %}
+            <div class="alert alert-danger">
+              {% autoescape false %}
+              {%- for msg in errors %}
+                {{ msg }}</br>
+              {% endfor -%}
+              {% endautoescape %}
+            </div>  
+          {% endif %}
+        {% endwith %}
+        
+        <p>The server encountered an internal error and was unable to complete 
+        your request. Either the server is overloaded or there is an error 
+        in the application.<br>If the problem persists, please contact your
+        systems administrator.</p>
+      </div>   
+    </div>
+      
+{% endblock body %}

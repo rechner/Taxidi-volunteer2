@@ -11,14 +11,20 @@
     <script type="text/javascript" src="{{ url_for('static', filename='js/mobiledetect.js') }}"></script>
     
     <!-- css -->
-    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/bootstrap.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
   </head>
   <body>
     <!--[if lt IE 7]>
-      <p class="browsehappy">You are using an <strong>outdated</strong> browser. 
-        Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+      <div class="container browsehappy">
+      <div class="alert alert-info fade in">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        You are using an <strong>outdated</strong> browser. 
+        Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.
+      </div>
+      </div>
     <![endif]-->
+    
     {% block body %}
     {% endblock %}
 

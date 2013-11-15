@@ -1,28 +1,7 @@
 {% extends "layout.html" %}
+{% import 'timeout.html' as timeout %}
 {% block title %}Select Activity{% endblock %}
 {% block body %}
-
-  <!-- Modal -->
-  <div class="modal fade" id="timeoutModal" tabindex="-1" role="dialog" 
-       aria-labelledby="timeoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h4 class="modal-title" id="timeoutModalLabel">Are you still there?</h4>
-        </div>
-        <div class="modal-body">
-          It looks like you've been stuck here for quite some time.
-          Press 'Continue' to keep your session open.  Otherwise I'll go back
-          to the search screen in <strong><span id="timer_value"></span></strong> seconds.
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" onClick="reset_interval();"
-            data-dismiss="modal">Continue</button>
-        </div>
-      </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-  </div><!-- /.modal -->
 
   <div class="container">   
     <div class="well opaque">
@@ -38,7 +17,7 @@
       </div>
       
       <div class="container">
-        <h2 class="text-center">Select Activity</h2><br>
+        <h1 class="text-center">Select Activity</h1><br>
       </div>
       
       {% if error %}
@@ -59,9 +38,10 @@
           {{ loop.cycle('<div class="row">', '') }}
             {{ loop.cycle('<div class="col-md-5 col-md-offset-1">', '<div class="col-md-5">') }}
           {% endautoescape %}
-              <label class="btn btn-default btn-block btn-lg" for="activity{{ activity.id }}">
-                <input name="activity" id="activity{{ activity.id }}" 
+              <label class="btn btn-default btn-block btn-lg" for="toggle{{ activity.id }}">
+                <input name="activity" id="toggle{{ activity.id }}" 
                   type="checkbox" value="{{ activity.id }}"> <strong>{{ activity.name }}</strong>
+                  <label class="sr-only" for="toggle{{ activity.id }}">{{ activity.name }}</label>
               </label>
             </div>
           {% autoescape false %}
@@ -88,50 +68,6 @@
     </div>
   </div>
   
-  <script>
-    //set timeout redirect:
-    var timeout = 30; // 30 second until redirect
-    var timeout_warning = 10; // show warning at 10 seconds
-    
-    function timeout_tick() {
-      timeout--;
-      console.log(timeout);
-      document.getElementById("timer_value").innerHTML = timeout;
-      
-      if (timeout == timeout_warning) {
-        //show the warning modal:
-        $('#timeoutModal').modal('show');
-      }
-      
-      if (timeout == 0) {
-        // Why do I have to specify this /again/?
-        window.location.replace("/timeclock");
-      }      
-    }
-    
-    function reset_interval() {
-      window.clearInterval(timer)
-      timeout = 30;
-      timer = window.setInterval("timeout_tick();", 1000);
-    }
-    
-    $(document).ready(function() {
-      //FIXME: Set initial values
-  
-      $("input:checkbox").change(function() {
-        if ($(this).is(":checked")) {
-          $(this).parent().attr("class", "btn btn-success btn-block btn-lg");
-        } else {
-          $(this).parent().attr("class", "btn btn-default btn-block btn-lg");
-        }      
-      });
-      
-    });
-    
-    if (!jQuery.browser.mobile) {
-      /* mobile browsers don't handle modals very well, so we'll just
-         silently ignore the timeout function */
-      var timer = window.setInterval("timeout_tick();", 1000);
-    }
-  </script>
+  {{ timeout.timeout(message = "This is a custom message, and going back in %s seconds") }}
+ 
 {% endblock %}

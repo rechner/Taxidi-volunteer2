@@ -49,7 +49,7 @@ UNAUTHORIZED = 0
 NEW = 128
 RESET_TABLES = 256
 
-__schema_version = 0
+_schema_version = 0
 
 """
 PostgreSQL driver for Taxidi volunteer tracking.
@@ -63,6 +63,7 @@ class Database:
     :param location: Physical check-in location for reporting purposes (e.g. lobby)
     """
     def __init__(self, host, dbname, user, password, location='pyTimeClock'):
+        logging.getLogger(__name__)
         logging.debug("Setting up database connection")
         self.host = host
         self.dbname = dbname
@@ -90,6 +91,8 @@ class Database:
 
         logging.info("Created PostgreSQL database instance on host {0}:{1}.".format(host, port))
         logging.debug("Checking for tables and creating them if not present....")
+        
+        self.InitDb()
         
         self.columns = """id, name, surname, email, salt, hash, home_phone, 
             mobile_phone, sms_capable, dob, license_number, email_verified, 
@@ -143,6 +146,8 @@ class Database:
         d = {}
         for idx, col in enumerate(self.cursor.description):
             d[col[0]] = row[idx]
+            if isinstance(row[idx], str):
+                d[col[0]] = row[idx].decode('utf-8')
         return d
 
     def to_dict(self, a):
@@ -161,7 +166,7 @@ class Database:
         """
         logging.debug("Enter InitDb()")
         try:
-            dbVersion = self.execute('SELECT "int_value" FROM "_meta" WHERE "key" = \'schema_version\';')
+            dbVersion = self.getMeta('schema_version')
             logging.debug("Database schema version: %n", dbVersion)
         except psycopg2.OperationalError as e:
             #Database hasn't been initialized (or _meta table is missing)
@@ -169,16 +174,16 @@ class Database:
             self.cursor.set_isolation_level(0) #Enter autocommit mode
             self.upgradeSchema(0)
             
-        if dbVersion < __schema_version:
+        if dbVersion < _schema_version:
             logging.warn("Database schema version %n is older than code schema version %n", 
-                         dbVersion, __schema_version)
+                         dbVersion, _schema_version)
             logging.warn("You should backup the database before upgrading.")
             
 
     def upgradeSchema(self):
-        if dbVersion >= __schema_version:
+        if dbVersion >= _schema_version:
             logging.warn("Database schema version %n is older than code schema version %n", 
-                         dbVersion, __schema_version)
+                         dbVersion, _schema_version)
             #Get number of versions behind:
             upgradeVersions = range(dbVer+1, curVer+1)
             #logging.warn("Backing up database for schema upgrade.")
@@ -267,7 +272,10 @@ class Database:
     #=== Meta (settings) keys: ===
     def getMeta(self, key):
         a = self.execute("SELECT int_value, str_value FROM _meta WHERE key = %s;", (key,));
-        ret = self.getNestedDictionary(a)[0]
+        if a:
+            ret = self.getNestedDictionary(a)[0]
+        else:
+            return None
         if ret['int_value'] is None:
             return ret['str_value']
         else:
@@ -321,6 +329,9 @@ class Database:
     or entire phone number.
     """
     def search(self, query):
+        a = ()
+        if query == '':
+            return a
         if query.isdigit() and (len(query) == 4 or len(query) == 7) or query[0] == '+':
             #Looks like the last four digits of a phone number:
             a = self.searchPhone(query)
@@ -464,30 +475,33 @@ class SchemaVersionException(Exception):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "LamePass")
-    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "lamepass") #GITIGNORE
+    #db = Database("127.0.0.1:15432", "volunteers", "volunteers", "LamePass")
+    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "pass") #GITIGNORE
     
     db.addActivity('Parking')
     db.addActivity(u'Café')
     db.addActivity('Greeter')
     db.commit()
+    #~ 
+    #~ activities = db.getActivities()
+    #~ for activity in activities:
+        #~ db.deleteActivity(activity['id'])
+    #~ print db.getActivities()
+    #~ db.commit()
+    #~ 
+    #~ db.addService('First Service', 0, '08:00', '10:29')
+    #~ db.addService('Second Service', 0, '10:30', '12:00')
+    #~ db.commit()
+    #~ services = db.getServices()
+    #~ for service in services:
+        #~ db.deleteService(service['id'])
+    #~ db.commit()
     
-    activities = db.getActivities()
-    for activity in activities:
-        db.deleteActivity(activity['id'])
-    print db.getActivities()
-    db.commit()
+    #db.addUser('Zachary', 'Sturgeon', 'jkltechinc@gmail.com') #GITIGNORE
+    #~ db.addUser('John', 'Smith', 'email@example.com', home_phone="(317) 455-5832")
+    #~ db.commit()
     
-    db.addService('First Service', 0, '08:00', '10:29')
-    db.addService('Second Service', 0, '10:30', '12:00')
-    db.commit()
-    services = db.getServices()
-    for service in services:
-        db.deleteService(service['id'])
-    db.commit()
-    
-    db.addUser('Zachary', 'Sturgeon', 'jkltechinc@gmail.com') #GITIGNORE
-    db.commit()
+    print db.search("1231213212")
     
     db.close() 
    

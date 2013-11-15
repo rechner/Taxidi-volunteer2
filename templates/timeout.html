@@ -1,0 +1,84 @@
+<!-- Contains timeout function for use in the kiosk, as well as the checkbox
+  toggle button jquery. Specify a zero or negative timeout to disable, or
+  call `window.clearInterval(timer)`.   To use the toggle buttons, set the
+  id if the checkbox to start with "toggle", and wrap it in a button. -->
+{% macro timeout(timeout=30, warning=10, target='/timeclock', title=None, message=None) %}
+  <script>
+    //set timeout redirect:
+    var timeout = {{ timeout }}; // 30 second until redirect
+    var timeout_warning = {{ warning }}; // show warning at 10 seconds
+    
+    function timeout_tick() {
+      timeout--;
+      window.onclick = reset_interval;  //reset the idle timer if something's clicked
+      document.getElementById("timer_value").innerHTML = timeout;
+      
+      if (timeout == timeout_warning) {
+        //show the warning modal:
+        $('#timeoutModal').modal('show');
+      }
+      
+      if (timeout == 0) {
+        // Why do I have to specify this /again/?
+        window.location.replace("{{ target }}");
+      }      
+    }
+    
+    function reset_interval() {
+      window.clearInterval(timer);
+      timeout = 30;
+      timer = window.setInterval("timeout_tick();", 1000);
+    }
+    
+    $(document).ready(function() {
+      //FIXME: Set initial values
+  
+      $("input[id^='toggle']:checkbox").change(function() {
+        if ($(this).is(":checked")) {
+          $(this).parent().attr("class", "btn btn-success btn-block btn-lg");
+        } else {
+          $(this).parent().attr("class", "btn btn-default btn-block btn-lg");
+        }      
+      });
+      
+    });
+    
+    if (!jQuery.browser.mobile) {
+      /* mobile browsers don't handle modals very well, so we'll just
+         silently ignore the timeout function */
+      var timer = window.setInterval("timeout_tick();", 1000);
+    }
+  </script>
+  
+<!-- Modal -->
+  <div class="modal fade" id="timeoutModal" tabindex="-1" role="dialog" 
+       aria-labelledby="timeoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title" id="timeoutModalLabel">{% if title -%}
+            {{ title }}
+          {%- else -%}
+            Are you still there?
+          {%- endif %}</h4>
+        </div>
+        <div class="modal-body">
+          {% if message %}
+            {% autoescape false %}
+            {{ message % '<strong><span id="timer_value"></span></strong>' }}
+            {% endautoescape %}
+          {% else %}
+            It looks like you've been stuck here for quite some time.
+            Press 'Continue' to keep your session open.  Otherwise I'll go back
+            to the search screen in <strong><span id="timer_value"></span></strong> seconds.
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onClick="reset_interval();"
+            data-dismiss="modal">Continue</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+{% endmacro %}
