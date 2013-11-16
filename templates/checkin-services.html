@@ -16,8 +16,18 @@
       </div>
       
       <div class="container">
-        <h1 class="text-center">Select Services</h1><br>
+        <h1 class="text-center">{{ title }}</h1><br>
       </div>
+      
+      {% with errors = get_flashed_messages(category_filter=["error"]) -%}
+        {% if errors %}
+          {%- for msg in errors %}
+            <div class="alert alert-danger text-center lead">
+              <strong>Error: </strong> {{ msg }}
+            </div>
+          {% endfor -%}
+        {% endif %}
+      {%- endwith %}
       
       <hr>
       <form role="form" action="/checkin-note" method="GET" name="activity">
@@ -27,22 +37,19 @@
           <input type="hidden" name="activity" value="{{ activity }}">
         {% endfor %}
         <div id="services">
+          {% for service in services %}
           <div class="row">
             <div class="col-md-6 col-md-offset-3">
-              <label class="btn btn-default btn-block btn-lg" for="toggle1">
-                <input id="toggle11" type="checkbox" name="service" value="2"> <strong>First Service</strong> <small>(08:00 - 10:30)</small>
+              <label class="btn btn-default btn-block btn-lg" for="toggle{{ service.id }}">
+                <input id="toggle{{ service.id }}" 
+                 type="{{ "checkbox" if allow_multiple else "radio" }}" name="service" 
+                 value="{{ service.id }}"> <strong>{{ service.name }}</strong> 
+                 <small>({{ service.start_time|strftime }} - {{ service.end_time|strftime }})</small>
               </label>
             </div>
           </div>
           <br>
-          <div class="row">
-            <div class="col-md-6 col-md-offset-3">
-              <label class="btn btn-default btn-block btn-lg" for="toggle2">
-                <input id="toggle2" type="checkbox" name="service" value="2"> <strong>Second Service</strong> <small>(11:45 - 12:30)</small>
-              </label>
-            </div>
-          </div>
-        </div>
+          {% endfor %}
         
         <hr>
         
@@ -54,6 +61,6 @@
       </form>
     </div>
   </div>
-  
-{{ timeout.timeout() }}
+
+  {{ timeout.timeout(kiosk.timeout, kiosk.timeout_warning, title=kiosk.timeout_title, message=kiosk.timeout_message) }}
 {% endblock %}

@@ -62,7 +62,7 @@ class Database:
     :param password: Password for database authentication
     :param location: Physical check-in location for reporting purposes (e.g. lobby)
     """
-    def __init__(self, host, dbname, user, password, location='pyTimeClock'):
+    def __init__(self, host, dbname, user, password, location='pyTimeClock', timeout=10):
         logging.getLogger(__name__)
         logging.debug("Setting up database connection")
         self.host = host
@@ -77,17 +77,21 @@ class Database:
             else:
                 port = 5432
             self.conn = psycopg2.connect(host=host, database=dbname, 
-                user=user, password=password, port=port)
+                user=user, password=password, port=port, connect_timeout=timeout)
                 #application_name=location)
                 
             self.cursor = self.conn.cursor()
-        except psycopg2.OperationalError as e:
+        except psycopg2.OperationalError, e:
             if e.pgcode == '28P01' or e.pgcode == '28000':
                 raise DatabaseError(INVALID_PASSWORD)
+            elif e.pgcode is None:
+                #Usually an issue with the client itself
+                logging.error(str(e))
+                raise DatabaseError(FAIL, str(e))
             else:
                 #Unhandled error.  Show it to the user.
-                print e
-                raise DatabaseError(e.pgcode, e.pgcode)
+                logging.error(e)
+                raise DatabaseError(e.pgcode, e.diag.message_primary)
 
         logging.info("Created PostgreSQL database instance on host {0}:{1}.".format(host, port))
         logging.debug("Checking for tables and creating them if not present....")
@@ -167,7 +171,7 @@ class Database:
         logging.debug("Enter InitDb()")
         try:
             dbVersion = self.getMeta('schema_version')
-            logging.debug("Database schema version: %n", dbVersion)
+            logging.debug("Database schema version: ({0})".format(dbVersion))
         except psycopg2.OperationalError as e:
             #Database hasn't been initialized (or _meta table is missing)
             logging.warn(e)
@@ -237,6 +241,14 @@ class Database:
         logging.debug("Fetch all activities getActivities()")
         a = self.execute("SELECT id, name, admin FROM activities;")
         return self.getNestedDictionary(a)
+        
+    """
+    Returns a dictionary of attributes for a single activity referenced by id
+    """
+    def getActivity(self, id):
+        logging.debug("Fetch activity ({0})".format(id))
+        a = self.execute("SELECT id, name, admin FROM activities WHERE id = %s", (id,))
+        return self.getNestedDictionary(a)[0]
         
     """
     Adds an activity.  Optionally specify an administrator who will receive
@@ -322,6 +334,12 @@ class Database:
              
     def deleteUser(self, id):
         self.execute("DELETE FROM users WHERE id = %s", (id,))
+        
+    def getUserByID(self, id):
+        a = self.execute("SELECT {0} FROM users WHERE id = %s;".format(self.columns), (id,))
+        if len(a) == 0:
+            return None
+        return self.getNestedDictionary(a)[0]
     
     #==== Search ====
     """
@@ -476,12 +494,12 @@ class SchemaVersionException(Exception):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     #db = Database("127.0.0.1:15432", "volunteers", "volunteers", "LamePass")
-    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "pass") #GITIGNORE
+    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "lamepass") #GITIGNORE
     
-    db.addActivity('Parking')
-    db.addActivity(u'Café')
-    db.addActivity('Greeter')
-    db.commit()
+    #~ db.addActivity('Parking')
+    #~ db.addActivity(u'Café')
+    #~ db.addActivity('Greeter')
+    #~ db.commit()
     #~ 
     #~ activities = db.getActivities()
     #~ for activity in activities:
@@ -493,6 +511,8 @@ if __name__ == "__main__":
     #~ db.addService('Second Service', 0, '10:30', '12:00')
     #~ db.commit()
     #~ services = db.getServices()
+    #~ import pprint
+    #~ pprint.pprint(services)
     #~ for service in services:
         #~ db.deleteService(service['id'])
     #~ db.commit()
@@ -501,7 +521,8 @@ if __name__ == "__main__":
     #~ db.addUser('John', 'Smith', 'email@example.com', home_phone="(317) 455-5832")
     #~ db.commit()
     
-    print db.search("1231213212")
+    #~ print db.getActivity(60)
+    #~ print db.search("1231213212")
     
     db.close() 
    

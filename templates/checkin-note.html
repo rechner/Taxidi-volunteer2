@@ -3,28 +3,6 @@
 {% block title %}Select Activity{% endblock %}
 {% block body %}
 
-  <!-- Modal -->
-  <div class="modal fade" id="timeoutModal" tabindex="-1" role="dialog" 
-       aria-labelledby="timeoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h4 class="modal-title" id="timeoutModalLabel">Are you still there?</h4>
-        </div>
-        <div class="modal-body">
-          It looks like you've been stuck here for quite some time.
-          Press 'Continue' to keep your session open.  Otherwise I'll go back
-          to the search screen in <strong><span id="timer_value"></span></strong> seconds.
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" onClick="reset_interval();"
-            data-dismiss="modal">Continue</button>
-        </div>
-      </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-  </div><!-- /.modal -->
-
   <div class="container">   
     <div class="well opaque">
       
@@ -39,14 +17,18 @@
       </div>
       
       <div class="container">
-        <h1 class="text-center">Custom Text Title</h1><br>
+        <h1 class="text-center">{{ title }}</h1><br>
       </div>
       
-      {% if error %}
-      <div class="alert alert-danger text-center lead">
-        <strong>Error: </strong> {{ error }}
-      </div>
-      {% endif %}
+      {% with errors = get_flashed_messages(category_filter=["error"]) -%}
+        {% if errors %}
+          {%- for msg in errors %}
+            <div class="alert alert-danger text-center lead">
+              <strong>Error: </strong> {{ msg }}
+            </div>
+          {% endfor -%}
+        {% endif %}
+      {%- endwith %}
       
       <hr>
       
@@ -54,12 +36,12 @@
         <form role="form" action="/checkin-confirm" method="POST" name="activity">
           <input type="hidden" name="search" value="{{ search }}">
           <input type="hidden" name="id" value="{{ id }}">
-          {% for activity in activities %}
+          {% for activity in activities -%}
             <input type="hidden" name="activity" value="{{ activity }}">
           {% endfor %}
           {% for service in services %}
             <input type="hidden" name="service" value="{{ service }}">
-          {% endfor %}
+          {%- endfor %}
           
           <div class="row">
             <div class="input-large col-md-offset-3 col-md-6">
@@ -81,5 +63,5 @@
     </div>
   </div>
   
- {{ timeout.timeout() }}
+ {{ timeout.timeout(kiosk.timeout, kiosk.timeout_warning, title=kiosk.timeout_title, message=kiosk.timeout_message) }}
 {% endblock %}

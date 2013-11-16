@@ -8,23 +8,26 @@ CREATE TABLE IF NOT EXISTS "_meta"
 CREATE TABLE IF NOT EXISTS "users"
 	("id" SERIAL PRIMARY KEY, "name" text, "surname" text, 
 	"email" text, "salt" text, "hash" VARCHAR(256), 
-	"home_phone" text, "mobile_phone" text, "sms_capable" boolean, 
-	"dob" DATE, "license_number" text, "email_verified" boolean, 
-	"newsletter" boolean, "admin" boolean, "join_date" timestamp, 
+	"home_phone" text, "mobile_phone" text, 
+	"sms_capable" boolean DEFAULT FALSE, "dob" DATE, 
+	"license_number" text, "email_verified" boolean DEFAULT FALSE, 
+	"newsletter" boolean DEFAULT FALSE, "admin" boolean DEFAULT FALSE, 
+	"join_date" timestamp DEFAULT NOW(),
 	"last_login" timestamp, "last_seen" timestamp, 
-	"last_updated" timestamp, "locked" boolean); 
+	"last_updated" timestamp, "locked" boolean DEFAULT FALSE); 
 	
 CREATE TABLE IF NOT EXISTS "services"
-	("id" SERIAL PRIMARY KEY, "name" text, 
+	("id" SERIAL PRIMARY KEY, "name" text NOT NULL, 
 	"day" INT CHECK (day >= 0 AND day <= 7), 
-	start_time TIME WITHOUT TIME ZONE, end_time TIME WITHOUT TIME ZONE); 
+	start_time TIME WITHOUT TIME ZONE NOT NULL, 
+	end_time TIME WITHOUT TIME ZONE NOT NULL); 
 	
 CREATE TABLE IF NOT EXISTS "activities"
-	("id" SERIAL PRIMARY KEY, "name" text UNIQUE NOT NULL, 
-	"admin" INT REFERENCES users(id) ON DELETE RESTRICT); 
+	("id" SERIAL PRIMARY KEY, "name" UNIQUE NOT NULL, 
+	"admin" INT REFERENCES users(id) ON DELETE SET DEFAULT 1); 
 	
 CREATE TABLE IF NOT EXISTS "barcode"
-	("id" SERIAL PRIMARY KEY, "value" text UNIQUE NOT NULL, 
+	("id" SERIAL PRIMARY KEY, "value" text NOT NULL, 
 	"person" INT REFERENCES users(id) ON DELETE CASCADE); 
 	
 CREATE TABLE IF NOT EXISTS "user_openid"
@@ -32,10 +35,16 @@ CREATE TABLE IF NOT EXISTS "user_openid"
 	"person" INT REFERENCES users(id) ON DELETE CASCADE); 
 	
 CREATE TABLE IF NOT EXISTS "statistics"
-	("id" SERIAL PRIMARY KEY, "person" INT REFERENCES users(id), 
+	("id" SERIAL PRIMARY KEY, 
+	"person" INT REFERENCES users(id) ON DELETE SET DEFAULT 1, 
 	"checkin" timestamp, "checkout" timestamp,
-	"service" text[], "activity" text, "note" text); 
-	
+	"service" text[], "activity" text[], "note" text); 
+
+-- Default user referenced by the statistics table, if record is deleted:
+INSERT INTO "users" (id, name, surname, locked, join_date, hash) VALUES
+	(1, 'Deleted', 'User', TRUE, NOW(), 'disabled');
+UPDATE "users" SET "name" = 'Deleted', "surname" = 'User', locked = TRUE,
+	join_date = NOW(), hash = 'disabled' WHERE id = 1;
 
 INSERT INTO "_meta"("key", "int_value") VALUES ('schema_version', 0);
 UPDATE "_meta" SET "int_value" = 0 WHERE "key" = 'schema_version';

@@ -17,14 +17,18 @@
       </div>
       
       <div class="container">
-        <h1 class="text-center">Select Activity</h1><br>
+        <h1 class="text-center">{{ title }}</h1><br>
       </div>
       
-      {% if error %}
-      <div class="alert alert-danger text-center lead">
-        <strong>Error: </strong> {{ error }}
-      </div>
-      {% endif %}
+      {% with errors = get_flashed_messages(category_filter=["error"]) -%}
+        {% if errors %}
+          {%- for msg in errors %}
+            <div class="alert alert-danger text-center lead">
+              <strong>Error: </strong> {{ msg }}
+            </div>
+          {% endfor -%}
+        {% endif %}
+      {%- endwith %}
       
       <hr>
       
@@ -33,14 +37,14 @@
           <input type="hidden" name="search" value="{{ search }}">
           <input type="hidden" name="id" value="{{ id }}">
     
-          {% for activity in activities %}
+          {% for activity in activities -%}
           {% autoescape false %}
           {{ loop.cycle('<div class="row">', '') }}
             {{ loop.cycle('<div class="col-md-5 col-md-offset-1">', '<div class="col-md-5">') }}
           {% endautoescape %}
               <label class="btn btn-default btn-block btn-lg" for="toggle{{ activity.id }}">
                 <input name="activity" id="toggle{{ activity.id }}" 
-                  type="checkbox" value="{{ activity.id }}"> <strong>{{ activity.name }}</strong>
+                  type="{{ "checkbox" if allow_multiple else "radio" }}" value="{{ activity.id }}"> <strong>{{ activity.name }}</strong>
                   <label class="sr-only" for="toggle{{ activity.id }}">{{ activity.name }}</label>
               </label>
             </div>
@@ -51,7 +55,7 @@
           <div class="alert alert-warning text-center lead">
             <strong>Oops! </strong> There doesn't seem to be any activities here.
           </div>
-          {% endfor %}
+          {%- endfor %}
 
         </div>
         
@@ -68,6 +72,5 @@
     </div>
   </div>
   
-  {{ timeout.timeout(message = "This is a custom message, and going back in %s seconds") }}
- 
+  {{ timeout.timeout(kiosk.timeout, kiosk.timeout_warning, title=kiosk.timeout_title, message=kiosk.timeout_message) }} 
 {% endblock %}

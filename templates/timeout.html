@@ -31,9 +31,30 @@
     }
     
     $(document).ready(function() {
-      //FIXME: Set initial values
+      //Set initial values:
+      $("input[id^='toggle']:checkbox").each(function() { 
+        if ($(this).is(":checked")) 
+          $(this).parent().attr("class", "btn btn-success btn-block btn-lg"); 
+      });
   
       $("input[id^='toggle']:checkbox").change(function() {
+        if ($(this).is(":checked")) {
+          $(this).parent().attr("class", "btn btn-success btn-block btn-lg");
+        } else {
+          $(this).parent().attr("class", "btn btn-default btn-block btn-lg");
+        }      
+      });
+      
+      //Same for radio buttons
+      $("input[id^='toggle']:radio").each(function() { 
+        if ($(this).is(":checked")) 
+          $(this).parent().attr("class", "btn btn-success btn-block btn-lg"); 
+      });
+      
+      $("input[id^='toggle']:radio").change(function() {
+        // Reset everything first
+        $("input[id^='toggle']:radio").parent().
+          attr("class", "btn btn-default btn-block btn-lg");
         if ($(this).is(":checked")) {
           $(this).parent().attr("class", "btn btn-success btn-block btn-lg");
         } else {
