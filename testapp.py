@@ -24,14 +24,17 @@ def hello():
   
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-  #TODO
+  with app.app_context():
+    db = get_db()
+    site_title = db.getMeta('site_title')
+    
   error = None
   if request.method == 'POST':
     pass
   else:
     pass
     
-  return render_template('login.html')
+  return render_template('login.html', site_title=site_title)
     
 def fetchKioskConstants():
   db = get_db()
@@ -54,7 +57,7 @@ def timeclock(error=None):
     
   return render_template('checkin-search.html', site_title=site_title, search_message=search_message)
   
-@app.route('/timeclock-search', methods=['GET', 'POST'])
+@app.route('/timeclock-search')
 def timeclockSearch():
   search = request.args.get('search', '')
   if search == '':
@@ -137,12 +140,10 @@ def checkinConfirm():
   search = request.form['search']
   ID = int(request.form['id'])
   #parse and validate selected activities:
-  activities = request.form.getlist("activity")
-  services = request.form.getlist("service")
+  activitiesID = request.form.getlist("activity")
+  servicesID = request.form.getlist("service")
   note = request.form.get('message', None)
-  
-  #TODO Dereference activities and services to their names:
-  
+  if note == '': note = None
   
   with app.app_context():
     db = get_db()
@@ -150,7 +151,20 @@ def checkinConfirm():
     person = db.getUserByID(ID)
     note_title = db.getMeta('kiosk_note_title')
     
-  return render_template('checkin-confirm.html', person=person, activities=activities)
+    #Dereference activities and services by ID to their names:
+    activities = db.getActivityNameList(activitiesID)  
+    activitiesString = ", ".join(activities)
+    activitiesString = activitiesString.decode('utf8')
+    services = db.getServiceNameList(servicesID)
+    servicesString = ", ".join(services)
+    servicesString = servicesString.decode('utf8')
+    
+    #Record the check-in
+    db.doCheckin(person['id'], activities, services, note)
+    db.commit()
+    
+  return render_template('checkin-confirm.html', person=person, activities=activitiesString,
+                    services=servicesString, note=note, note_title=note_title)
   
 @app.errorhandler(500)
 def applicationError(error):

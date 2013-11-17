@@ -3,11 +3,21 @@
 {% import 'navbar.html' as navbar %}
 {% block body %}
   <div class="container">
-    {{ navbar.top('Volunteers', 'index') }}    
+    {{ navbar.top(site_title, 'index') }}    
     <div class="well opaque">
       
       
       <h2 style="text-align: center">Login</h2><br>
+
+      {% with errors = get_flashed_messages(category_filter=["error"]) -%}
+        {% if errors %}
+          {%- for msg in errors %}
+            <div class="alert alert-danger text-center">
+              <strong>Error: </strong> {{ msg }}
+            </div>
+          {% endfor -%}
+        {% endif %}
+      {%- endwith %}
 
       <div class="row">
           <div class="col-md-6 col-md-offset-3"></div>
@@ -15,7 +25,7 @@
 
       <div class="row">
         <div class="col-md-4"></div>
-          <form class="form-horizontal col-md-4" role="form" action="/login" method="POST" name="Login">          
+          <form class="form-horizontal col-md-4" role="form" action="{{ url_for('login') }}" method="POST" name="Login">          
             <div class="form-group">
                 <label for="username" class="col-lg-4 control-label">Username</label>
                 <div class="col-lg-8">

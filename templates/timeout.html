@@ -2,7 +2,10 @@
   toggle button jquery. Specify a zero or negative timeout to disable, or
   call `window.clearInterval(timer)`.   To use the toggle buttons, set the
   id if the checkbox to start with "toggle", and wrap it in a button. -->
-{% macro timeout(timeout=30, warning=10, target='/timeclock', title=None, message=None) %}
+{% macro timeout(timeout=30, warning=10, target=None, title=None, message=None) %}
+{% if target is none %}
+  {% set target = url_for('timeclock') %}
+{% endif %}
   <script>
     //set timeout redirect:
     var timeout = {{ timeout }}; // 30 second until redirect

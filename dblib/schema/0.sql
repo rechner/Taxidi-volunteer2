@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS "user_openid"
 	
 CREATE TABLE IF NOT EXISTS "statistics"
 	("id" SERIAL PRIMARY KEY, 
-	"person" INT REFERENCES users(id) ON DELETE SET DEFAULT 1, 
+	"person" INT DEFAULT 1 REFERENCES users(id) ON DELETE SET DEFAULT, 
 	"checkin" timestamp, "checkout" timestamp,
 	"service" text[], "activity" text[], "note" text); 
 

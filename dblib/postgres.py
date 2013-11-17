@@ -251,6 +251,16 @@ class Database:
         return self.getNestedDictionary(a)[0]
         
     """
+    Pass a list of ID's (string or integer) and will return a list of their 
+    corresponding sting names.
+    """
+    def getActivityNameList(self, IDList):
+        IDList = tuple(IDList)
+        logging.debug("Get activity name list ({0})".format(id))
+        a = self.execute("SELECT name FROM activities WHERE id IN %s;", (IDList,))
+        return map(lambda x: x[0], a) #flatten the list
+        
+    """
     Adds an activity.  Optionally specify an administrator who will receive
     reports about their activity, referenced by user id.
     """
@@ -271,6 +281,16 @@ class Database:
         logging.debug("Fetch all services getServices()")
         a = self.execute("SELECT id, name, day, start_time, end_time FROM services;")
         return self.getNestedDictionary(a)
+        
+    """
+    Pass a list of ID's (string or integer) and will return a list of their 
+    corresponding service names.
+    """
+    def getServiceNameList(self, IDList):
+        IDList = tuple(IDList)
+        logging.debug("Get activity name list ({0})".format(id))
+        a = self.execute("SELECT name FROM services WHERE id IN %s;", (IDList,))
+        return map(lambda x: x[0], a) #flatten the list
         
     def addService(self, name, day, start_time, end_time):
         logging.debug("Adding service '{0}'".format(name))
@@ -300,6 +320,19 @@ class Database:
             logging.debug("Set meta {0} = '{1}'".format(key, int_value))
         self.execute("UPDATE _meta SET int_value = %s, str_value = %s WHERE key = %s",
             (key, int_value, str_value))
+    
+    #=== Statistics ===
+    """
+        ("id" SERIAL PRIMARY KEY, 
+    "person" INT REFERENCES users(id) ON DELETE SET DEFAULT 1, 
+    "checkin" timestamp, "checkout" timestamp,
+    "service" text[], "activity" text[], "note" text); 
+    """
+    def doCheckin(self, person, activities, services, note):
+        a = self.execute("""INSERT INTO statistics
+        (person, checkin, service, activity, note) VALUES 
+        (%s, NOW(), %s, %s, %s);""", (person, services, activities, note))
+        
     
     #=== Users ===
     #==== CRUD ====
@@ -523,6 +556,8 @@ if __name__ == "__main__":
     
     #~ print db.getActivity(60)
     #~ print db.search("1231213212")
+    
+    #~ print db.getActivityNameList((61, 59, 60))
     
     db.close() 
    
