@@ -347,13 +347,16 @@ class Database:
         if password == None:
             hash = "disabled"
         else:
-            hash = hashlib.sha256(password).hexdigest()
+            hash = hashlib.sha256(salt + password).hexdigest()
             
         if join_date == None:
             join_date = datetime.datetime.now()
             
-        self.execute("""INSERT INTO users({0}) VALUES 
-            (DEFAULT, %(name)s, %(surname)s, %(email)s, %(salt)s, %(hash)s,
+        self.execute("""INSERT INTO users(name, surname, email, salt, hash, 
+            home_phone, mobile_phone, sms_capable, dob, license_number, 
+            email_verified, newsletter, admin, join_date, last_login, 
+            last_seen, last_updated, locked) VALUES 
+            (%(name)s, %(surname)s, %(email)s, %(salt)s, %(hash)s,
              %(home_phone)s, %(mobile_phone)s, %(sms)s, %(dob)s, %(license)s,
              %(email_verified)s, %(newsletter)s, %(admin)s, %(join_date)s,
              %(last_login)s, %(last_seen)s, %(last_updated)s, %(locked)s);""".format(self.columns),
@@ -373,6 +376,28 @@ class Database:
         if len(a) == 0:
             return None
         return self.getNestedDictionary(a)[0]
+        
+    def authenticate(self, email, password):
+        a = self.execute("SELECT {0} FROM users WHERE email = %s;".format(self.columns), (email,))        
+        if len(a) == 0:
+            return False, None
+            
+        #check password:
+        person = self.getNestedDictionary(a)[0]
+        if person['locked']:
+            return False, "locked"
+            
+        computedHash = hashlib.sha256(person['salt']+password).hexdigest()
+        if computedHash == person['hash']:
+            #Update last_login:
+            self.updateLastLogin(person['id'])
+            return True, person
+            
+        return False, None
+        
+        
+    def updateLastLogin(self, id):
+        self.execute("UPDATE users SET last_login = NOW() WHERE id = %s", (id,))
     
     #==== Search ====
     """
@@ -551,8 +576,8 @@ if __name__ == "__main__":
     #~ db.commit()
     
     #db.addUser('Zachary', 'Sturgeon', 'jkltechinc@gmail.com') #GITIGNORE
-    #~ db.addUser('John', 'Smith', 'email@example.com', home_phone="(317) 455-5832")
-    #~ db.commit()
+    db.addUser('John', 'Smith', 'example@gmail.com', home_phone="(317) 555-5555", password="lamepass", admin=True)
+    db.commit()
     
     #~ print db.getActivity(60)
     #~ print db.search("1231213212")

@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 {% block title %}Hello, World!{% endblock %}
-{% import 'navbar.html' as navbar %}
+{% import 'navbar-admin.html' as navbar %}
 {% block body %}
   <div class="container">
-    {{ navbar.top('Volunteers', 'index') }}    
+    {{ navbar.top('Volunteers', url_for('index'), user) }}    
     <div class="well opaque">
       <h1>{{ test }}</h1>
     </div>

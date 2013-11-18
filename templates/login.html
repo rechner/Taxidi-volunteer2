@@ -3,11 +3,11 @@
 {% import 'navbar.html' as navbar %}
 {% block body %}
   <div class="container">
-    {{ navbar.top(site_title, 'index') }}    
+    {{ navbar.top(site_title, 'index', sites=({'title' : 'Login', 'href' : None, 'active' : True},)) }}    
     <div class="well opaque">
       
       
-      <h2 style="text-align: center">Login</h2><br>
+      <h2 style="text-align: center">{{ site_title }} Login</h2><br>
 
       {% with errors = get_flashed_messages(category_filter=["error"]) -%}
         {% if errors %}
@@ -27,9 +27,9 @@
         <div class="col-md-4"></div>
           <form class="form-horizontal col-md-4" role="form" action="{{ url_for('login') }}" method="POST" name="Login">          
             <div class="form-group">
-                <label for="username" class="col-lg-4 control-label">Username</label>
+                <label for="email" class="col-lg-4 control-label">E-Mail</label>
                 <div class="col-lg-8">
-                    <input type="text" placeholder="Username" class="form-control" name="username">
+                    <input type="text" placeholder="E-Mail" class="form-control" name="email" autofocus>
                 </div>
             </div>
             

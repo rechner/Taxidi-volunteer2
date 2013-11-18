@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
-from flask import Flask, Response, render_template, request, session, g, flash, abort, redirect, url_for
+from flask import Flask, Response, render_template, request, session, g
+from flask import flash, abort, redirect, url_for
 from contextlib import closing
 import dateutil
 from dblib import postgres as database
@@ -13,14 +14,31 @@ app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RB'
 
 @app.route('/')
 def index():
-  return Response("Hello world!")
+  if session.get('logged_in'):
+    return redirect(url_for('admin'))
+  return redirect(url_for('login'))
   
 @app.route('/hello/')
 def hello():
-  with app.app_context():
-    db = get_db()
-    test = db.getMeta('site_title')
-  return render_template('hello.html', test = test)
+  if session.get('logged_in'):
+    test = "Logged in!"
+  else:
+    test = "Not logged in :-("
+  return render_template('hello.html', test=test, user=session.get('user'))
+
+@app.route('/admin')
+def admin():
+  if session.get('logged_in'):
+    return render_template('admin.html', user=session.get('user'))  
+  else:
+    return redirect(url_for('login'))
+    
+@app.route('/admin-register')
+def register():
+  if session.get('logged_in'):
+    return render_template('admin-register.html', user=session.get('user'))
+  else:
+    return redirect(url_for('login'))
   
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -28,13 +46,26 @@ def login():
     db = get_db()
     site_title = db.getMeta('site_title')
     
-  error = None
-  if request.method == 'POST':
-    pass
-  else:
-    pass
+    error = None
+    if request.method == 'POST':
+      email = request.form["email"]
+      password = request.form["password"]
+      auth = db.authenticate(email, password)
+      if auth[0]: #Success
+        session['logged_in'] = True
+        session['user'] = auth[1]
+        return redirect(url_for('hello'))
+      else:
+        flash("Username or password is incorrect", "error")
     
   return render_template('login.html', site_title=site_title)
+  
+@app.route('/logout')
+def logout():
+  session.pop('logged_in', None)
+  session.pop('user', None)
+  flash("You were logged out succesfully", "info")
+  return redirect(url_for('index'))
     
 def fetchKioskConstants():
   db = get_db()
