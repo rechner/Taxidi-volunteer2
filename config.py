@@ -4,9 +4,9 @@ import platform
 
 class Config(object):
     DB_HOSTNAME = "localhost"
-    DB_PORT = 15432
+    DB_PORT = 5432
+    DB_NAME = "volunteers"
     DB_USER = "volunteers"
-    DB_PASSWORD = "<password>"
     DB_PASSWORD = "lamepass" #GITIGNORE
     PG_DUMP = "/usr/bin/pg_dump"
     PG_PSQL = "/usr/bin/psql"
