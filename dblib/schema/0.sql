@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS "_meta"
 
 CREATE TABLE IF NOT EXISTS "users"
 	("id" SERIAL PRIMARY KEY, "name" text, "surname" text, 
-	"email" text, "salt" text, "hash" VARCHAR(256), 
+	"email" text, "salt" text, "hash" VARCHAR(256) DEFAULT 'disabled', 
 	"home_phone" text, "mobile_phone" text, 
 	"sms_capable" boolean DEFAULT FALSE, "dob" DATE, 
 	"license_number" text, "email_verified" boolean DEFAULT FALSE, 

@@ -51,6 +51,13 @@ RESET_TABLES = 256
 
 _schema_version = 0
 
+#Fix for Flask which won't JSON serialize datetime() objects.  This would be 
+#better served as a JSON filter that casts the datetime into an ISO format 
+#string, but the related code is deep in flask's inner workings.
+del psycopg2.extensions.string_types[1082]
+del psycopg2.extensions.string_types[1184]
+
+
 """
 PostgreSQL driver for Taxidi volunteer tracking.
 """
@@ -323,10 +330,7 @@ class Database:
     
     #=== Statistics ===
     """
-        ("id" SERIAL PRIMARY KEY, 
-    "person" INT REFERENCES users(id) ON DELETE SET DEFAULT 1, 
-    "checkin" timestamp, "checkout" timestamp,
-    "service" text[], "activity" text[], "note" text); 
+    
     """
     def doCheckin(self, person, activities, services, note):
         a = self.execute("""INSERT INTO statistics
@@ -336,11 +340,21 @@ class Database:
     
     #=== Users ===
     #==== CRUD ====
+    def userExists(self, name, surname, email):
+        a = self.execute("""SELECT id FROM users WHERE name = %s AND
+        surname = %s AND email = %s""", (name, surname, email))
+        ret = self.getNestedDictionary(a)
+        if len(a) > 0:
+            return True, ret[0]['id']
+        else:
+            return False, None
+    
     def addUser(self, name, surname, email=None, home_phone=None, mobile_phone=None, \
                 sms=False, dob=None, license_number=None, email_verified=False, \
                 newsletter=False, admin=False, join_date=None,
                 last_login=None, last_seen=None, last_updated=None,
                 locked=False, password=None):
+        logging.debug("Enter addUser()")
         
         salt = os.urandom(42).encode('base_64').strip('\n') #Get a salt
         #Login disallowed by setting a non-computable hash:
@@ -398,6 +412,20 @@ class Database:
         
     def updateLastLogin(self, id):
         self.execute("UPDATE users SET last_login = NOW() WHERE id = %s", (id,))
+        self.commit()
+        
+    def changePassword(self, id, password):
+        salt = os.urandom(42).encode('base_64').strip('\n') #Get a salt
+        #Login disallowed by setting a non-computable hash:
+        if password == None:
+            hash = "disabled"
+        else:
+            hash = hashlib.sha256(salt + password).hexdigest()
+            
+        now = datetime.datetime.now()
+        self.execute("""UPDATE users SET hash = %s, salt = %s, 
+            last_updated = %s WHERE id = %s""", (hash, salt, now, id))
+        self.commit()
     
     #==== Search ====
     """
@@ -552,12 +580,21 @@ class SchemaVersionException(Exception):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     #db = Database("127.0.0.1:15432", "volunteers", "volunteers", "LamePass")
-    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "lamepass") #GITIGNORE
+    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "Nilaixua3DaK") #GITIGNORE
     
-    #~ db.addActivity('Parking')
-    #~ db.addActivity(u'Café')
-    #~ db.addActivity('Greeter')
-    #~ db.commit()
+    db.addActivity('Parking Team')
+    db.addActivity(u'Café Team')
+    db.addActivity('Welcome Centre Team')
+    db.addActivity('Ushers Team')
+    db.addActivity('Explorers')
+    db.addActivity('Outfitters')
+    db.addActivity('Route 56')
+    db.addActivity('Catalyst')
+    db.addActivity('Worship/Creative Arts')
+    db.addActivity('Office')
+    db.addActivity('Events')
+    db.addActivity(u'Stage Décor')
+    db.commit()
     #~ 
     #~ activities = db.getActivities()
     #~ for activity in activities:
@@ -565,9 +602,9 @@ if __name__ == "__main__":
     #~ print db.getActivities()
     #~ db.commit()
     #~ 
-    #~ db.addService('First Service', 0, '08:00', '10:29')
-    #~ db.addService('Second Service', 0, '10:30', '12:00')
-    #~ db.commit()
+    db.addService('First Service', 0, '08:00', '10:29')
+    db.addService('Second Service', 0, '10:30', '12:00')
+    db.commit()
     #~ services = db.getServices()
     #~ import pprint
     #~ pprint.pprint(services)
@@ -576,8 +613,8 @@ if __name__ == "__main__":
     #~ db.commit()
     
     #db.addUser('Zachary', 'Sturgeon', 'jkltechinc@gmail.com') #GITIGNORE
-    db.addUser('John', 'Smith', 'example@gmail.com', home_phone="(317) 555-5555", password="lamepass", admin=True)
-    db.commit()
+    #~ db.addUser('John', 'Smith', 'example@gmail.com', home_phone="(317) 555-5555", password="lamepass", admin=True)
+    #~ db.commit()
     
     #~ print db.getActivity(60)
     #~ print db.search("1231213212")

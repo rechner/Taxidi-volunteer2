@@ -18,8 +18,13 @@
     <div class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li><a href="{{ url_for('index') }}"><span class="glyphicon glyphicon-home"></span> Home</a></li>
-        <li><a href="{{ url_for('register') }}" class="{% if action == 'register' %}active{% endif %}">
+        <li class="{% if action == 'register' %}active{% endif %}">
+          <a href="{{ url_for('register') }}">
           <span class="glyphicon glyphicon-plus-sign"></span> Register</a>
+        </li>
+        <li class="{% if action == 'reports' %}active{% endif %}">
+          <a href="{{ url_for('register') }}">
+          <span class="glyphicon glyphicon-list-alt"></span> Reports</a>
         </li>
         
       </ul>
@@ -36,9 +41,7 @@
            data-toggle="dropdown"><span class="glyphicon glyphicon-user"></span>
            {{ user.name }} {{ user.surname }} <b class="caret"></b></a>
           <ul class="dropdown-menu" role="menu" aria-labelledby="drop">
-            <li role="presentation"><a role="menuitem" tabindex="-1" href="http://twitter.com/fat">Action</a></li>
-            <li role="presentation"><a role="menuitem" tabindex="-1" href="http://twitter.com/fat">Another action</a></li>
-            <li role="presentation"><a role="menuitem" tabindex="-1" href="http://twitter.com/fat">Something else here</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="{{ url_for('profile') }}">Profile</a></li>
             <li role="presentation" class="divider"></li>
             <li role="presentation"><a role="menuitem" tabindex="-1" href="{{ url_for('logout') }}">Log out</a></li>
           </ul>
@@ -51,7 +54,6 @@
             data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span>
           </a>
           <ul class="dropdown-menu" role="menu" aria-labelledby="drop2">
-            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Manage Users</a></li>
             <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Kiosk Settings</a></li>
           </ul>
         </li>

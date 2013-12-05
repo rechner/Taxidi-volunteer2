@@ -2,9 +2,11 @@
 #-*- coding:utf-8 -*-
 
 from flask import Flask, Response, render_template, request, session, g
-from flask import flash, abort, redirect, url_for
+from flask import flash, abort, redirect, url_for, get_flashed_messages
+from flask import Markup
 from contextlib import closing
-import dateutil
+import re
+import datetime, dateutil
 from dblib import postgres as database
 import config
 
@@ -17,14 +19,16 @@ def index():
   if session.get('logged_in'):
     return redirect(url_for('admin'))
   return redirect(url_for('login'))
-  
-@app.route('/hello/')
-def hello():
+   
+@app.route('/profile')      
+def profile(): #Perhaps this should just be a shortlink to /user/<id>
   if session.get('logged_in'):
-    test = "Logged in!"
-  else:
-    test = "Not logged in :-("
-  return render_template('hello.html', test=test, user=session.get('user'))
+    return render_template('admin-edit-profile.html', user=session.get('user'), form=None)
+    
+@app.route('/profile/password')
+def change_password():
+  if session.get('logged_in'):
+    return render_template('admin-change-password.html', user=session.get('user'))
 
 @app.route('/admin')
 def admin():
@@ -33,10 +37,98 @@ def admin():
   else:
     return redirect(url_for('login'))
     
-@app.route('/admin-register')
+@app.route('/admin-register', methods=['GET', 'POST'])
 def register():
   if session.get('logged_in'):
-    return render_template('admin-register.html', user=session.get('user'))
+    if request.method == 'POST':
+      #Grab the form values and validate them:
+      name = request.form['name']
+      surname = request.form['surname']
+      email = request.form['email']
+      admin = request.form.get('admin', False)
+      password = request.form['password']      
+      confirm_pass = request.form['confirm_pass']
+      dob = request.form['dob']
+      license_number = request.form['license_number']
+      home_phone = request.form['home_phone']
+      mobile_phone = request.form['mobile_phone']
+      sms_capable = request.form.get('sms_capable', False)
+      newsletter = request.form.get('newsletter', False)
+      error = False
+      
+      #checkboxes are weird
+      if admin == "on": admin = True
+      if sms_capable == "on": sms_capable = True
+      if newsletter == "on": newsletter
+      
+      if name == "":
+        flash("First name is a required field", 'error')
+        error = True
+      if surname == "":
+        flash("Surname is a required field", 'error')
+        error = True
+      if dob == "":
+        flash("Date of birth is a required field", 'error')
+        error = True
+        
+      #Validate date
+      try:
+        datetime.datetime.strptime(dob, "%Y-%m-%d").date()
+      except ValueError as e:
+        flash("Date of birth must be in YYYY-MM-DD format (e.g. 1990-10-21):" + \
+              " {0}".format(e.message), 'error')
+        error = True
+        
+      #validate email:
+      if email != "":
+        if not re.match("^[a-zA-Z0-9._%-+]+@[a-zA-Z0-9._%-]+.[a-zA-Z]{2,6}$", email):
+          flash("Please enter a valid email address", 'error')
+          error = True
+        
+      #validate password
+      if admin:
+        if email == "":
+          flash("You must specify an email to allow administrative access", 'error')
+          error = True
+        if password == "":
+          flash("You must specify a password to allow administrative access", 'error')
+          error = True
+        if password != confirm_pass:
+          flash("The passwords provided do not match.", 'error')
+          error = True
+      if password == "": password = None
+             
+      #Populate form with pre-filled values if there was an error
+      form = { 'name' : name, 'surname' : surname, 'email' : email,
+               'admin' : admin, 'dob' : dob, 'home_phone' : home_phone,
+               'license_number' : license_number, 'newsletter' : newsletter,
+               'mobile_phone' : mobile_phone, 'sms_capable' : sms_capable }
+      
+      #FIXME: For some reason, this delays flashing by one request.
+      #~ if not get_flashed_messages(category_filter=["error"]):
+      if not error:
+        app.logger.debug("Passed registration validation, adding user to database")
+        #Check to see if someone with the same name and email exists already:
+        with app.app_context():
+          db = get_db()
+          
+          exists, id = db.userExists(name, surname, email)
+          if exists:
+            flash('The user <a class="alert-link" href="/details/{0}">{1} {2}</a> already exists.' \
+              .format(id, Markup.escape(name), Markup.escape(surname)), 'error')
+          else:
+            app.logger.debug("No duplicates found.  Registering user in database.")
+            db.addUser(name, surname, email, home_phone, mobile_phone, \
+                     sms_capable, dob, license_number, newsletter=newsletter,
+                     admin=admin, password=password)                     
+            db.commit()
+            flash("<b>{0} {1}</b> has been registered successfully." \
+              .format(Markup.escape(name), Markup.escape(surname)), 'success')
+        form = None #clear the form
+    
+    if request.method == 'GET':
+      form = None #Return a blank form
+    return render_template('admin-register.html', user=session.get('user'), form=form)
   else:
     return redirect(url_for('login'))
   
@@ -53,8 +145,9 @@ def login():
       auth = db.authenticate(email, password)
       if auth[0]: #Success
         session['logged_in'] = True
+        #~ auth[1]['dob'] = auth[1]['dob'].isoformat() if hasattr('isoformat')
         session['user'] = auth[1]
-        return redirect(url_for('hello'))
+        return redirect(url_for('index'))
       else:
         flash("Username or password is incorrect", "error")
     
@@ -196,6 +289,7 @@ def checkinConfirm():
     
   return render_template('checkin-confirm.html', person=person, activities=activitiesString,
                     services=servicesString, note=note, note_title=note_title)
+              
   
 @app.errorhandler(500)
 def applicationError(error):
