@@ -4,9 +4,12 @@
 from flask import Flask, Response, render_template, request, session, g
 from flask import flash, abort, redirect, url_for, get_flashed_messages
 from flask import Markup
+from flask import json
 from contextlib import closing
 import re
 import datetime, dateutil
+from time import mktime
+
 from dblib import postgres as database
 import config
 
@@ -335,6 +338,23 @@ def _jinja2_filter_datetime(date, fmt=None):
   format='%H:%M'  #TODO: i18n
   return native.strftime(format) 
   
+  
+"""
+Custom JSON encoder to handle datetime representations:
+"""
+class DatetimeJSONEncoder(json.JSONEncoder):
+  
+  def default(self, obj):
+    if isinstance(obj, datetime.datetime):
+      return int(mktime(obj.timetuple()))
+    
+    elif isinstance(obj, datetime.date):
+      return int(mktime(obj.timetuple()))
+  
+    return json.JSONEncoder.default(self, obj)
+
+app.json_encoder = DatetimeJSONEncoder
+app.logger.debug(app.json_encoder)
 
 if __name__ == "__main__":
   app.run()

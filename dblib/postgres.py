@@ -51,13 +51,6 @@ RESET_TABLES = 256
 
 _schema_version = 0
 
-#Fix for Flask which won't JSON serialize datetime() objects.  This would be 
-#better served as a JSON filter that casts the datetime into an ISO format 
-#string, but the related code is deep in flask's inner workings.
-del psycopg2.extensions.string_types[1082]
-del psycopg2.extensions.string_types[1184]
-
-
 """
 PostgreSQL driver for Taxidi volunteer tracking.
 """

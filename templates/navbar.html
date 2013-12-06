@@ -1,5 +1,5 @@
 {% macro top(title, home='index.html', 
-             sites=({'title' : 'Login', 'href' : '/login', 'active' : False},)) %}
+             sites=({'title' : 'Login', 'href' : None, 'active' : False},)) %}
   <!-- navbar -->
   <div class="navbar navbar-default navbar-fixed-top">
     <div class="navbar-header">
@@ -13,12 +13,12 @@
         <img class="pull-left navbar-icon" src="/resources/images/icon.png" width="34" alt="Dreamteam Logo">
       </a>-->
       <!-- couldn't figure out how to override this text colour in css -->
-      <a style="color: #555" class="navbar-brand" href="/">{{ title }}</a>
+      <a style="color: #555" class="navbar-brand" href="{{ url_for('index') }}">{{ title }}</a>
     </div>
 
     <div class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-        <li class="active"><a href="/">Home</a></li>
+        <li><a href="/">Home</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
       {% for link in sites %}
@@ -27,7 +27,13 @@
         {% else %}
           <li>
         {% endif %}
-          <a href="{{ link.href }}">{{ link.title }}</a></li>
+        
+        {% if link.href is none %}
+          {% set href = url_for('login') %}
+        {% else %}
+          {% set href = link.href %}
+        {% endif %}
+          <a href="{{ href }}">{{ link.title }}</a></li>
       {% endfor %}
       </ul>
     </div>
