@@ -359,7 +359,7 @@ class DatetimeJSONEncoder(json.JSONEncoder):
   
     return json.JSONEncoder.default(self, obj)
 
-#~ app.json_encoder = DatetimeJSONEncoder
+app.json_encoder = DatetimeJSONEncoder
 app.logger.debug(app.json_encoder)
 
 if __name__ == "__main__":
