@@ -46,6 +46,9 @@
         } else {
           $(this).parent().attr("class", "btn btn-default btn-block btn-lg");
         }      
+        /* skip keeping focus on the checkbox after the event is fired, since
+         * the virtual keyboard plugin we use pops up for any <input> field  */
+        $(this).blur();
       });
       
       //Same for radio buttons
@@ -62,7 +65,8 @@
           $(this).parent().attr("class", "btn btn-success btn-block btn-lg");
         } else {
           $(this).parent().attr("class", "btn btn-default btn-block btn-lg");
-        }      
+        }
+        $(this).blur();      
       });
       
     });
