@@ -242,6 +242,11 @@ def selectServices():
     
   return render_template('checkin-services.html', search=search, activities=activities, id=ID,
                 services=services, kiosk=kiosk, title=title, allow_multiple=allow_multiple)
+                
+@app.route('/search')
+def searchAdmin():
+  if session.get('logged_in'):
+    return render_template('search-results.html', user=session.get('user'))
   
 @app.route('/checkin-note', methods=['GET'])
 def checkinNote():
@@ -345,6 +350,7 @@ Custom JSON encoder to handle datetime representations:
 class DatetimeJSONEncoder(json.JSONEncoder):
   
   def default(self, obj):
+    #datetimes encoded in UNIX time
     if isinstance(obj, datetime.datetime):
       return int(mktime(obj.timetuple()))
     
@@ -353,7 +359,7 @@ class DatetimeJSONEncoder(json.JSONEncoder):
   
     return json.JSONEncoder.default(self, obj)
 
-app.json_encoder = DatetimeJSONEncoder
+#~ app.json_encoder = DatetimeJSONEncoder
 app.logger.debug(app.json_encoder)
 
 if __name__ == "__main__":
