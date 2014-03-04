@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+{% block title %}DreamTeam Check-in — Reporting{% endblock %}
+{% import 'navbar-admin.html' as navbar %}
+{% block body %}
+  <div class="container">
+    {{ navbar.top('Volunteers', url_for('index'), user, action="reports") }}    
+    <div class="well opaque">
+      
+      <h1>{{ "Reports" if not report_title }}</h1>
+      <br>
+      
+      <div class="row">
+        <div class="col-md-3">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h3 class="panel-title">Report Catalogue</h3>
+                </div>
+                <div class="panel-body">          
+                  <ul>
+                  {% for report in available_reports %}
+                    <li><a href="{{ url_for('reportBuild', name=report.path) }}">
+                      {{ note_title if report.title == '%note_title%' else report.title }} Report
+                    </a></li>
+                  {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- additional sidepanel content -->
+          {% if show_actions -%}
+          <div class="row">
+            <div class="col-md-12">
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h3 class="panel-title">Report Actions</h3>
+                </div>
+                <div class="panel-body">          
+                  <ul class="nav nav-stacked">
+                    <li><a href="#"><span class="glyphicon glyphicon-print"></span> Print</a></li>
+                    <li><a href="{{ url_for('reportBuildCSV', name=name) }}?{{ query_string }}"><span class="glyphicon glyphicon-download-alt"></span> Download (csv)</a></li>
+                    <li><a href="#"><span class="glyphicon glyphicon-refresh"></span> Refresh</a></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          {%- endif %}
+          
+        </div>
+    
+        <div class="col-md-9">
+          <div class="row">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Report Parameters</h3>
+              </div>
+              <div class="panel-body">
+                {% if not report_parameters -%}
+                  <p>Select a report to begin</p>
+                {%- endif %}
+                
+                {% block parameters %}
+                {% endblock %}
+                
+              </div>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Report Output</h3>
+              </div>
+              <div class="panel-body">     
+                {% block output %}
+                {% endblock %}
+              </div>
+            </div>
+          </div>
+        </div>
+          
+      </div>
+      
+    </div>
+  </div>
+  
+  <script>
+    $(function() {
+      $( "#reportdate" ).datepicker({
+         changeMonth: true,
+         changeYear: true,
+         dateFormat: 'yy-mm-dd',
+         date: "now"
+        });
+    });
+  </script>
+{% endblock %}

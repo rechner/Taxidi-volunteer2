@@ -330,6 +330,20 @@ class Database:
         (person, checkin, service, activity, note) VALUES 
         (%s, NOW(), %s, %s, %s);""", (person, services, activities, note))
         
+    def doCheckout(self, person):
+        a = self.execute("""UPDATE statistics SET checkout = NOW() WHERE
+        person = %s AND checkin >= current_date 
+        AND checkout IS NULL;""", (person,))        
+        
+    def getCheckinStatus(self, id):
+        a = self.execute("""SELECT id FROM statistics WHERE 
+        checkin >= current_date AND person = %s AND checkout IS NULL;""",
+        (str(id),))
+        ret = self.getNestedDictionary(a)
+        if len(a) >= 1:
+            return True
+        else:
+            return False
     
     #=== Users ===
     #==== CRUD ====
@@ -449,8 +463,9 @@ class Database:
             query = query.replace("*", "%")
             
         a = self.execute("""SELECT DISTINCT {0} FROM "users" WHERE
-                name ILIKE %s OR surname ILIKE %s;""".format(self.columns),
-                (query,)*2)
+                name ILIKE %s OR surname ILIKE %s OR
+                (name || ' ' || surname) ILIKE %s;""".format(self.columns),
+                (query,)*3)
                 
         return self.getNestedDictionary(a)
                         

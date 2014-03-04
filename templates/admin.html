@@ -10,10 +10,30 @@
         <div class="col-md-6">
           <div class="panel panel-default">
             <div class="panel-heading">
+              <span class="pull-right">
+                <span class="glyphicon glyphicon-edit"></span>
+                <a href="#">Edit Activities</a>
+              </span>
               <h3 class="panel-title">Activities</h3>
             </div>
             <div class="panel-body">
-              Panel content
+              <ul class="col col-2">
+                {% for activity in activities -%}
+                  <li><a href="activity/{{ activity.id }}">{{ activity.name }}</a></li>
+                {%- endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              
+              <h3 class="panel-title">Actions</h3>
+            </div>
+            <div class="panel-body">
+              <a href="{{ url_for('timeclock') }}" class="btn btn-success btn-block">Open Timeclock</a>
             </div>
           </div>
         </div>

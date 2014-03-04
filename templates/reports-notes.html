@@ -1,0 +1,48 @@
+{% extends "reports.html" %}
+
+{% block parameters %}
+  <form class="form-inline" role="form" action="{{ url_for('reportBuild', name='notes') }}" method="GET">
+    <div class="form-group">
+      <div class="col-md-4">
+        <label class="control-label" for="reportdate">Report Date</label>
+      </div>
+      <div class="col-md-5">
+        <input class="form-control" type="text" id="reportdate" name="reportdate" 
+         placeholder="YYYY-MM-DD" value="{{ args.get('reportdate', '') }}">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary" type="submit">Submit</button>
+      </div>
+    </div>
+    
+  </form>
+{% endblock %}
+
+{% block output %}
+  {% if output != None and output|length > 0 %}
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>{{ note_title }}</th></tr>
+    </thead>
+    <tbody>
+      {% for row in output %}
+      <tr>
+        <td><a href="{{ url_for('displayRecord', id=row.person) }}">
+          {{ row.name }} {{ row.surname }}
+        </a></td>
+        <td>{{ row.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% elif output|length == 0 %}
+  <p>No results</p>
+  {% else %}
+  <p>Please select a date to run report</p>
+  <script>
+    $(function() {
+      $("#reportdate").datepicker('setDate', new Date());
+    });
+  </script>
+  {% endif %}
+{% endblock %}

@@ -45,10 +45,17 @@
                 <td>{{ result.home_phone }}</td>
                 <td>{{ result.email }}</td>
                 <td>
+                {% if result.checked_in %}
+                  <a class="btn btn-success btn-md" role="button"
+                     href="{{ url_for('clockOut') }}?id={{ result.id }}">
+                      Clock out <span class="glyphicon glyphicon-log-out"></span>
+                  </a>
+                {% else %}
                   <a class="btn btn-primary btn-md" role="button"
                      href="{{ url_for('selectActivity') }}?id={{ result.id }}&search={{ search }}">
-                      Check in <span class="glyphicon glyphicon-arrow-right"></span>
+                      Clock in <span class="glyphicon glyphicon-arrow-right"></span>
                   </a>
+                {% endif %}
                 </td>
               </tr>
               {% endfor %}
