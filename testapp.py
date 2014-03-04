@@ -3,14 +3,17 @@
 
 from flask import Flask, Response, render_template, request, session, g
 from flask import flash, abort, redirect, url_for, get_flashed_messages
-from flask import Markup
+from flask import Markup, make_response
 from flask import json
 from contextlib import closing
 import re
 import datetime, dateutil
+import jinja2
+import tempfile
 from time import mktime
 
 from dblib import postgres as database
+import reports.init as report_plugins
 import config
 
 app = Flask(__name__)
@@ -24,8 +27,9 @@ def index():
   return redirect(url_for('login'))
    
 @app.route('/profile')      
-def profile(): #Perhaps this should just be a shortlink to /user/<id>
+def profile(): #Perhaps this should just be a shortlink to /id/<id>
   if session.get('logged_in'):
+    return redirect(url_for('displayRecord', id=session.get('user')['id']))
     return render_template('admin-edit-profile.html', user=session.get('user'), form=None)
     
 @app.route('/profile/password')
@@ -36,7 +40,10 @@ def change_password():
 @app.route('/admin')
 def admin():
   if session.get('logged_in'):
-    return render_template('admin.html', user=session.get('user'))  
+    with app.app_context():
+      db = get_db()
+      activities = db.getActivities()
+    return render_template('admin.html', user=session.get('user'), activities=activities)  
   else:
     return redirect(url_for('login'))
     
@@ -134,6 +141,80 @@ def register():
     return render_template('admin-register.html', user=session.get('user'), form=form)
   else:
     return redirect(url_for('login'))
+    
+@app.route('/reports')
+def reports():
+  if session.get('logged_in'):
+    with app.app_context():
+      db = get_db()
+      note_title = db.getMeta('kiosk_note_title')
+      
+      #get list of report modules:
+      available_reports = report_plugins.available_reports
+      app.logger.debug("Availble reporting plugins:")
+      app.logger.debug(available_reports)
+    return render_template('reports.html', user=session.get('user'), 
+      note_title=note_title, show_actions=False, available_reports=available_reports)
+    
+@app.route('/reports/<name>')
+def reportBuild(name):
+  if session.get('logged_in'):
+    show_actions = False
+    with app.app_context():
+      db = get_db()
+      note_title = db.getMeta('kiosk_note_title')
+      
+      # Attempt to import the requested reporting library and logic:
+      try:
+        #Import witchcraft
+        report_function = __import__('reports.{0}'.format(name), fromlist=[''])
+        output = report_function.build(db=db, request=request)
+        if output is not None:
+          if len(output) > 0:
+            show_actions = True
+        app.logger.debug("OUTPUT: {0}".format(output))
+      except ImportError:
+        return abort(404)
+
+    try:
+      return render_template('reports-{0}.html'.format(name), user=session.get('user'), 
+      note_title=note_title, show_actions=show_actions, output=output, args=request.args,
+      available_reports=report_plugins.available_reports, name=name, query_string=request.query_string)
+    except jinja2.exceptions.TemplateNotFound:
+      app.logger.error("Reporting plugin '{0}' has no matching template.".format(name))
+      return abort(500)
+  
+@app.route('/download/reports/<name>')
+def reportBuildCSV(name):
+  if session.get('logged_in'):
+    with app.app_context():
+      db = get_db()
+      note_title = db.getMeta('kiosk_note_title')
+      
+      # Attempt to import the requested reporting library and logic:
+      try:
+        #Import witchcraft
+        report_function = __import__('reports.{0}'.format(name), fromlist=[''])
+        output = report_function.build(db=db, request=request)
+        
+        if output is not None and len(output) > 0:        
+          with tempfile.NamedTemporaryFile(delete=False) as csvfile:
+            report_function.build_csv(output, csvfile)
+          with open(csvfile.name) as f:
+            data = f.read()
+          
+          #Serve up the file:
+          response = make_response(data)
+          response.headers["Content-Disposition"] = "attachment; filename=report.csv"
+          return response
+          
+      except ImportError:
+        return abort(404)
+
+@app.route('/print/reports/<name>')
+def reportBuildPrint(name):
+  if session.get('logged_in'):
+    pass
   
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -200,9 +281,21 @@ def timeclockSearch():
     kiosk = fetchKioskConstants()
     results_message = db.getMeta('kiosk_results_message')
     
+    for record in results:
+      record['checked_in'] = db.getCheckinStatus(record['id'])
+    
   return render_template('checkin-results.html', results_message=results_message,
         results=results, search = search, kiosk=kiosk)
   
+@app.route('/clock-out', methods=['GET'])
+def clockOut():
+  ID = request.args.get('id', '')
+  with app.app_context():
+    db = get_db()
+    if db.getUserByID(ID) is not None:
+      db.doCheckout(ID)
+      db.commit()
+  return redirect(url_for('timeclock'))
   
 @app.route('/select-activity', methods=['GET'])
 def selectActivity():
@@ -246,7 +339,29 @@ def selectServices():
 @app.route('/search')
 def searchAdmin():
   if session.get('logged_in'):
-    return render_template('search-results.html', user=session.get('user'))
+    query = request.args.get('q', '')
+    if query == '':
+      return redirect(url_for('admin'))
+    
+    with app.app_context():
+      db = get_db()
+      results = db.search(query)
+      if len(results) == 0:
+        flash(u"No results for \"{0}\"".format(query), "error")
+      
+    if len(results) == 1:
+      #Go directly to the single result:
+      return redirect(url_for('displayRecord', id=results[0]['id']))
+    return render_template('search-results.html', user=session.get('user'),
+                  results=results)
+                  
+@app.route('/id/<id>')
+def displayRecord(id):
+  if session.get('logged_in'):
+    with app.app_context():
+      db = get_db()
+      form = db.getUserByID(id)
+    return render_template('profile.html', user=session.get('user'), form=form)
   
 @app.route('/checkin-note', methods=['GET'])
 def checkinNote():
