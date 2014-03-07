@@ -1,6 +1,7 @@
 import csv
 
 name = "%note_title%"
+context = ()
 
 def build(db=None, request=None):
   if request is not None and db is not None:
@@ -20,4 +21,4 @@ def build_csv(results, csvfile):
   csvwriter.writeheader()
   for row in results:
     csvwriter.writerow(row)
-  
+

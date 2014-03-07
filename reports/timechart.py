@@ -1,5 +1,5 @@
 
 name = "Time Distribution"
 
-def build():
-  return ""
+def build(db=None, request=None):
+  return None

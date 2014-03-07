@@ -1,5 +1,5 @@
 
 name = "Birthday"
 
-def build():
-  return ""
+def build(db=None, request=None):
+  return None

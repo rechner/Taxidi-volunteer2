@@ -1,0 +1,33 @@
+<!-- neat little HTML do-dads -->
+
+{% macro listbox(values=[], name="List", title='', args=[], checked=False) %}
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <strong>{{ title }}</strong>
+      <div class="pull-right">
+        <input type="checkbox" style="display: none" id="{{ name }}toggle" 
+         {% if checked -%} checked {%- endif %}>
+        <a onclick="$('#{{ name }}toggle').trigger('click'); return false" 
+         href="#"><small>Toggle All</small></a>
+      </div>
+    </div>
+    <div class="panel-body scrollbox">
+    {% for row in values %}
+      <label><input id="{{ name }}" name="{{ name }}" 
+      {% if args or checked -%}
+       {% if row.id|string in args.getlist(name) or checked %} checked {% endif %}
+      {%- endif %}
+       type="checkbox" value="{{ row.id }}"> {{ row.name }}</label><br>
+    {% endfor %}
+    </div>
+  </div>
+  
+  <script>
+    $(function() {
+      $('#{{ name }}toggle').click(function () {
+        var checkboxes = $('input[name={{ name }}]');
+        checkboxes.prop("checked", !this.checked);
+      });
+    });
+  </script>
+{% endmacro %}

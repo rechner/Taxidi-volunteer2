@@ -175,13 +175,22 @@ def reportBuild(name):
         app.logger.debug("OUTPUT: {0}".format(output))
       except ImportError:
         return abort(404)
+        
+      #import the appropriate context:
+      if hasattr(report_function, 'context'):
+        if 'activities' in report_function.context:
+          session.services = db.getActivities()
+        if 'services' in report_function.context:
+          session.services = db.getServices()
 
     try:
       return render_template('reports-{0}.html'.format(name), user=session.get('user'), 
-      note_title=note_title, show_actions=show_actions, output=output, args=request.args,
-      available_reports=report_plugins.available_reports, name=name, query_string=request.query_string)
+        note_title=note_title, show_actions=show_actions, output=output, args=request.args,
+        available_reports=report_plugins.available_reports, name=name,
+        query_string=request.query_string)
     except jinja2.exceptions.TemplateNotFound:
       app.logger.error("Reporting plugin '{0}' has no matching template.".format(name))
+      flash(u"Reporting plugin '{0}' has no matching template. ".format(name), 'error')
       return abort(500)
   
 @app.route('/download/reports/<name>')
@@ -203,9 +212,11 @@ def reportBuildCSV(name):
           with open(csvfile.name) as f:
             data = f.read()
           
+          date = request.args.get('reportdate', '')
+          filename = "report-{0}-{1}.csv".format(name, date)
           #Serve up the file:
           response = make_response(data)
-          response.headers["Content-Disposition"] = "attachment; filename=report.csv"
+          response.headers["Content-Disposition"] = "attachment; filename=" + filename
           return response
           
       except ImportError:
@@ -214,7 +225,37 @@ def reportBuildCSV(name):
 @app.route('/print/reports/<name>')
 def reportBuildPrint(name):
   if session.get('logged_in'):
-    pass
+    with app.app_context():
+      db = get_db()
+      note_title = db.getMeta('kiosk_note_title')
+      
+      # Attempt to import the requested reporting library and logic:
+      try:
+        #Import witchcraft
+        report_function = __import__('reports.{0}'.format(name), fromlist=[''])
+        output = report_function.build(db=db, request=request)
+        if output is not None:
+          if len(output) > 0:
+            show_actions = True
+        app.logger.debug("OUTPUT: {0}".format(output))
+      except ImportError:
+        return abort(404)
+        
+      #import the appropriate context:
+      if hasattr(report_function, 'context'):
+        if 'activities' in report_function.context:
+          session.activities = 'activities', db.getActivities()
+        if 'services' in report_function.context:
+          session.services = db.getServices()
+
+    try:
+      return render_template('reports-{0}-print.html'.format(name), 
+        user=session.get('user'), note_title=note_title, output=output, 
+        args=request.args, name=name, query_string=request.query_string)
+    except jinja2.exceptions.TemplateNotFound:
+      app.logger.error("Reporting plugin '{0}' has no matching template.".format(name))
+      flash(u"Reporting plugin '{0}' has no matching template. ".format(name), 'error')
+      return abort(500)
   
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -458,6 +499,12 @@ def _jinja2_filter_datetime(date, fmt=None):
   format='%H:%M'  #TODO: i18n
   return native.strftime(format) 
   
+@app.template_filter('timedelta')
+def _jinja2_filter_timedelta(timedelta):
+  hours, remainder = divmod(timedelta.seconds, 3600)
+  minutes, seconds = divmod(timedelta.seconds, 60)
+  return '%s:%s:%s' % (hours, minutes, seconds)
+  
   
 """
 Custom JSON encoder to handle datetime representations:
@@ -478,4 +525,5 @@ app.json_encoder = DatetimeJSONEncoder
 app.logger.debug(app.json_encoder)
 
 if __name__ == "__main__":
+  #~ app.run(host='0.0.0.0')
   app.run()

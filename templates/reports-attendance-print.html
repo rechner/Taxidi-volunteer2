@@ -1,0 +1,58 @@
+{% extends "printout.html" %}
+
+{% block title -%}
+  Attendance Report for {{ args.get('reportdate', '') }}
+{%- endblock %}
+
+{% block body %}
+  {% if output != None and output|length > 0 %}
+  {% set tables = output[0] %}
+  {% set counts = output[1] %}
+  
+  <p>
+    <h1>Attendance Report {{ args.reportdate }}</h1>
+    <strong>Services:</strong> {{ ', '.join(tables.keys()|sort).decode('utf8') }}<br>
+    <strong>Attendance Total:</strong> {{ counts.__total__ }} 
+      {% if counts.__total__ == 1 -%}
+        person
+      {% else %}
+        people
+      {% endif %}
+  </p>
+  
+  {% for service in tables.keys()|sort %}
+  <h2>{{ service }}</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>Activity</th><th>Check-in</th><th>Time Served</th></tr>
+    </thead>
+    <tbody>
+      {% for row in tables[service] %}
+      <tr>
+        <td>{{ row.name }} {{ row.surname }} (id: {{ row.person }})</td>
+        <td>
+            {{ ', '.join(row.activity).decode('utf8') }}
+        </td>
+        <td>
+          {{ row.checkin|strftime }}
+        </td>
+        <td>
+          {% if row.time %}
+            {{ row.time|timedelta }}
+          {% else %}
+            (No Checkout)
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+  
+    {% if tables|length == 0 %}
+      <p>No results</p>
+    {% endif %}
+  {% else %}
+    <p>Report returned no results.</p>
+  {% endif %}
+{% endblock %}

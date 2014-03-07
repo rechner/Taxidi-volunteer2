@@ -14,8 +14,17 @@
         <button class="btn btn-primary" type="submit">Submit</button>
       </div>
     </div>
-    
   </form>
+  
+  <script>
+    $(function() {
+      $( "#reportdate" ).datepicker({
+         changeMonth: true,
+         changeYear: true,
+         dateFormat: 'yy-mm-dd'
+        }).datepicker('setDate', new Date());
+    });
+  </script>
 {% endblock %}
 
 {% block output %}
@@ -35,8 +44,9 @@
       {% endfor %}
     </tbody>
   </table>
-  {% elif output|length == 0 %}
-  <p>No results</p>
+    {% if output|length == 0 %}
+      <p>No results</p>
+    {% endif %}
   {% else %}
   <p>Please select a date to run report</p>
   <script>
@@ -45,4 +55,5 @@
     });
   </script>
   {% endif %}
+  
 {% endblock %}
