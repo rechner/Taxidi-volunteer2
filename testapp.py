@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+import os
+import config
+os.chdir(os.path.dirname(config.__file__)) #Override wsgi directory change
+
 from flask import Flask, Response, render_template, request, session, g
 from flask import flash, abort, redirect, url_for, get_flashed_messages
 from flask import Markup, make_response
@@ -14,7 +18,6 @@ from time import mktime
 
 from dblib import postgres as database
 import reports.init as report_plugins
-import config
 
 app = Flask(__name__)
 app.config.from_object("config.DevelopmentConfig")
@@ -179,7 +182,7 @@ def reportBuild(name):
       #import the appropriate context:
       if hasattr(report_function, 'context'):
         if 'activities' in report_function.context:
-          session.services = db.getActivities()
+          session.activities = db.getActivities()
         if 'services' in report_function.context:
           session.services = db.getServices()
 
