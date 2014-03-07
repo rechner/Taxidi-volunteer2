@@ -380,7 +380,7 @@ def selectServices():
   return render_template('checkin-services.html', search=search, activities=activities, id=ID,
                 services=services, kiosk=kiosk, title=title, allow_multiple=allow_multiple)
                 
-@app.route('/search')
+@app.route('/search', methods=['GET'])
 def searchAdmin():
   if session.get('logged_in'):
     query = request.args.get('q', '')
