@@ -7,7 +7,9 @@ Why is this a separate codebase?
 --------------------------------
 I had originally intended to make the volunteer tracking code a part of
 Taxidi itself, but schema and coding complications have lead me to
-start afresh.
+start afresh.  The Flask microframework makes development much more
+smooth, and this will serve as a testing grounds for an overhaul of
+the Taxidi web interface.
 
 What features can be expected?
 ------------------------------
@@ -16,3 +18,8 @@ What features can be expected?
 + Reports for each activity and shift, birthdays, staff attendance
 + Individual online account management
 
+Requirements 
+-------------
++ [Flask](http://flask.pocoo.org/)
++ [Flask-SSLify](https://github.com/kennethreitz/flask-sslify)
++ Psycopg2 and a PostgreSQL database

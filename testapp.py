@@ -9,6 +9,7 @@ from flask import Flask, Response, render_template, request, session, g
 from flask import flash, abort, redirect, url_for, get_flashed_messages
 from flask import Markup, make_response
 from flask import json
+from flask_sslify import SSLify
 from contextlib import closing
 import re
 import datetime, dateutil
@@ -20,7 +21,8 @@ from dblib import postgres as database
 import reports.init as report_plugins
 
 app = Flask(__name__)
-app.config.from_object("config.DevelopmentConfig")
+sslify = SSLify(app)
+app.config.from_object("config.Config")
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RB'
 
 @app.route('/')
