@@ -22,8 +22,7 @@ import reports.init as report_plugins
 
 app = Flask(__name__)
 sslify = SSLify(app)
-app.config.from_object("config.Config")
-app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RB'
+app.config.from_object("config.DevelopmentConfig")
 
 @app.route('/')
 def index():
