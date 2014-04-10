@@ -189,10 +189,20 @@
               <div class="row">
                 <div class="checkbox">
                   <input id="sms_capable" name="sms_capable" type="checkbox"
-                   {% if form['admin'] %}checked{% endif %}>
+                   {% if form['sms_capable'] %}checked{% endif %}>
                   <label for="sms_capable"> Enable text messages alerts</label>
                 </div>
               </div>
+            </div>
+          </div>
+          
+          <!-- barcode -->
+          <div class="form-group">
+            <label for="barcode" class="col-md-2 control-label">Barcode</label>
+            <div class="col-md-4">
+              <input id="barcode" type="text" placeholder="Barcode"
+               class="form-control" name="barcode"
+               value="{{ form['barcode'] if form.barcode != None }}">
             </div>
           </div>
           
@@ -201,7 +211,7 @@
             <div class="col-md-6 col-md-offset-2">
               <div class="checkbox">
                 <input id="newsletter" name="newsletter" type="checkbox" 
-                 value="true" {% if form['admin'] %}checked{% endif %}>
+                 value="true" {% if form['newsletter'] %}checked{% endif %}>
                 <label for="newsletter"> Subscribe to newsletter</label>
               </div>
             </div>

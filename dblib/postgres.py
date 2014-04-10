@@ -98,7 +98,7 @@ class Database:
         
         self.InitDb()
         
-        self.columns = """id, name, surname, email, salt, hash, home_phone, 
+        self.columns = """users.id, name, surname, email, salt, hash, home_phone, 
             mobile_phone, sms_capable, dob, license_number, email_verified, 
             newsletter, admin, join_date, last_login, last_seen, 
             last_updated, locked"""
@@ -373,14 +373,15 @@ class Database:
         if join_date == None:
             join_date = datetime.datetime.now()
             
-        self.execute("""INSERT INTO users(name, surname, email, salt, hash, 
+        a = self.execute("""INSERT INTO users(name, surname, email, salt, hash, 
             home_phone, mobile_phone, sms_capable, dob, license_number, 
             email_verified, newsletter, admin, join_date, last_login, 
             last_seen, last_updated, locked) VALUES 
             (%(name)s, %(surname)s, %(email)s, %(salt)s, %(hash)s,
              %(home_phone)s, %(mobile_phone)s, %(sms)s, %(dob)s, %(license)s,
              %(email_verified)s, %(newsletter)s, %(admin)s, %(join_date)s,
-             %(last_login)s, %(last_seen)s, %(last_updated)s, %(locked)s);""".format(self.columns),
+             %(last_login)s, %(last_seen)s, %(last_updated)s, %(locked)s)
+             RETURNING id;""".format(self.columns),
             {'name': name, 'surname': surname, 'email': email, 'salt': salt,
              'hash': hash, 'home_phone': home_phone, 'mobile_phone': mobile_phone,
              'sms': sms, 'dob': dob, 'license': license_number,
@@ -388,12 +389,67 @@ class Database:
              'admin': admin, 'join_date': join_date, 'last_login': last_login,
              'last_seen': last_seen, 'last_updated': last_updated,
              'locked': locked})
+        return self.getNestedDictionary(a)[0]['id']
+             
+    def updateUser(self, id, name, surname, email=None, home_phone=None, \
+                   mobile_phone=None, sms=False, dob=None, license_number=None, \
+                   email_verified=False, newsletter=False, admin=False, \
+                   last_login=None, last_seen=None, \
+                   last_updated=None, locked=None, password=None):
+        logging.debug("Enter updateUser()")
+        
+        user = self.getUserByID(id)
+        if user is None: return None
+        if locked is None:
+            locked = user['locked']
+        
+        salt = os.urandom(42).encode('base_64').strip('\n') #Get a salt
+        #Login disallowed by setting a non-computable hash:
+        if password is None:
+            if admin is False:
+                hash = "disabled"
+            else:
+                hash = self.getUserHashByID(id) #Keep the old password     
+        else:
+            hash = hashlib.sha256(salt + password).hexdigest()
+            
+        if last_updated is None:
+            last_updated = datetime.datetime.now()
+            
+        self.execute("""UPDATE users SET
+                            name =  %(name)s,
+                            surname = %(surname)s,
+                            email = %(email)s,
+                            salt = %(salt)s,
+                            hash = %(hash)s,
+                            home_phone = %(home_phone)s,
+                            mobile_phone = %(mobile_phone)s,
+                            sms_capable = %(sms)s,
+                            dob = %(dob)s,
+                            license_number = %(license)s,
+                            newsletter = %(newsletter)s,
+                            admin = %(admin)s,
+                            last_updated = %(last_updated)s,
+                            locked = %(locked)s
+                        WHERE
+                            id = %(id)s;""",
+            {'name': name, 'surname': surname, 'email': email, 'salt': salt,
+             'hash': hash, 'home_phone': home_phone, 'mobile_phone': mobile_phone,
+             'sms': sms, 'dob': dob, 'license': license_number, 'newsletter': newsletter,
+             'admin': admin, 'last_updated': last_updated, 'locked' : locked,
+             'id': id})
              
     def deleteUser(self, id):
         self.execute("DELETE FROM users WHERE id = %s", (id,))
         
     def getUserByID(self, id):
         a = self.execute("SELECT {0} FROM users WHERE id = %s;".format(self.columns), (id,))
+        if len(a) == 0:
+            return None
+        return self.getNestedDictionary(a)[0]
+        
+    def getUserHashByID(self, id):
+        a = self.execute("SELECT salt, hash FROM users WHERE id = %s;", (id,))
         if len(a) == 0:
             return None
         return self.getNestedDictionary(a)[0]
@@ -433,6 +489,22 @@ class Database:
         self.execute("""UPDATE users SET hash = %s, salt = %s, 
             last_updated = %s WHERE id = %s""", (hash, salt, now, id))
         self.commit()
+        
+    #==== Barcodes ====
+    # For now, this is a stopgap measure for single barcode assignments
+    # per person, until a nicer frontend can be hammered out.
+    def getBarcodeForId(self, id):
+        a = self.execute("SELECT value FROM barcode WHERE person = %s", (id,))
+        if len(a) == 0:
+            return None
+        return self.getNestedDictionary(a)[0]['value']
+        
+    def storeBarcode(self, id, value):
+        self.execute("DELETE FROM barcode WHERE person = %s", (id,))
+        self.execute("INSERT INTO barcode(person, value) VALUES (%s, %s)",
+            (id, value))
+        self.commit()
+    
     
     #==== Search ====
     """
@@ -446,11 +518,13 @@ class Database:
         if query.isdigit() and (len(query) == 4 or len(query) == 7) or query[0] == '+':
             #Looks like the last four digits of a phone number:
             a = self.searchPhone(query)
+        if len(a) == 0:
+            a = self.searchBarcode(query)
         if not query.isdigit():  #Search in names.
-            a = self.searchName(query)
+            a += self.searchName(query)
             if len(a) == 0:
                 #Search partial names, if no exact name was matched:
-                a = self.searchName(query+'%')
+                a += self.searchName(query+'%')
                 
         return a
     """
@@ -534,8 +608,15 @@ class Database:
                                 """.format(self.columns), (query,)*2)
                                 
         return self.getNestedDictionary(a)
-
     
+    def searchBarcode(self, query):
+        #query = str(query)
+        a = self.execute("""SELECT DISTINCT {0} FROM "users"
+                            RIGHT JOIN "barcode" ON users.id = barcode.person
+                            WHERE barcode.value = %s;
+                            """.format(self.columns), (query,))
+                
+        return self.getNestedDictionary(a)
     
     
 #FIXME: .pgpass will probably have to go into user's home directory
@@ -588,21 +669,20 @@ class SchemaVersionException(Exception):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     #db = Database("127.0.0.1:15432", "volunteers", "volunteers", "LamePass")
-    db = Database("127.0.0.1:15432", "volunteers", "volunteers", "Nilaixua3DaK") #GITIGNORE
     
-    db.addActivity('Parking Team')
-    db.addActivity(u'Café Team')
-    db.addActivity('Welcome Centre Team')
-    db.addActivity('Ushers Team')
-    db.addActivity('Explorers')
-    db.addActivity('Outfitters')
-    db.addActivity('Route 56')
-    db.addActivity('Catalyst')
-    db.addActivity('Worship/Creative Arts')
-    db.addActivity('Office')
-    db.addActivity('Events')
-    db.addActivity(u'Stage Décor')
-    db.commit()
+    #~ db.addActivity('Parking Team')
+    #~ db.addActivity(u'Café Team')
+    #~ db.addActivity('Welcome Centre Team')
+    #~ db.addActivity('Ushers Team')
+    #~ db.addActivity('Explorers')
+    #~ db.addActivity('Outfitters')
+    #~ db.addActivity('Route 56')
+    #~ db.addActivity('Catalyst')
+    #~ db.addActivity('Worship/Creative Arts')
+    #~ db.addActivity('Office')
+    #~ db.addActivity('Events')
+    #~ db.addActivity(u'Stage Décor')
+    #~ db.commit()
     #~ 
     #~ activities = db.getActivities()
     #~ for activity in activities:
@@ -610,9 +690,9 @@ if __name__ == "__main__":
     #~ print db.getActivities()
     #~ db.commit()
     #~ 
-    db.addService('First Service', 0, '08:00', '10:29')
-    db.addService('Second Service', 0, '10:30', '12:00')
-    db.commit()
+    #~ db.addService('First Service', 0, '08:00', '10:29')
+    #~ db.addService('Second Service', 0, '10:30', '12:00')
+    #~ db.commit()
     #~ services = db.getServices()
     #~ import pprint
     #~ pprint.pprint(services)
@@ -628,6 +708,8 @@ if __name__ == "__main__":
     #~ print db.search("1231213212")
     
     #~ print db.getActivityNameList((61, 59, 60))
+    
+    #~ print db.search('TEST12345')
     
     db.close() 
    

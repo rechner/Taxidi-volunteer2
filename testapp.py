@@ -62,6 +62,7 @@ def register():
       password = request.form['password']      
       confirm_pass = request.form['confirm_pass']
       dob = request.form['dob']
+      barcode = request.form['barcode']
       license_number = request.form['license_number']
       home_phone = request.form['home_phone']
       mobile_phone = request.form['mobile_phone']
@@ -127,16 +128,21 @@ def register():
           
           exists, id = db.userExists(name, surname, email)
           if exists:
-            flash('The user <a class="alert-link" href="/details/{0}">{1} {2}</a> already exists.' \
-              .format(id, Markup.escape(name), Markup.escape(surname)), 'error')
+            flash('The user <a class="alert-link" href="{0}">{1} {2}</a> already exists.' \
+              .format(url_for('displayRecord', id=id), Markup.escape(name), 
+                Markup.escape(surname)), 'error')
           else:
             app.logger.debug("No duplicates found.  Registering user in database.")
-            db.addUser(name, surname, email, home_phone, mobile_phone, \
+            id = db.addUser(name, surname, email, home_phone, mobile_phone, \
                      sms_capable, dob, license_number, newsletter=newsletter,
-                     admin=admin, password=password)                     
+                     admin=admin, password=password) 
+            if barcode != '':
+              db.storeBarcode(id, barcode)
             db.commit()
-            flash("<b>{0} {1}</b> has been registered successfully." \
-              .format(Markup.escape(name), Markup.escape(surname)), 'success')
+            flash("<a class=\"alert-link\" href=\"{2}\"><b>{0} {1}</b></a> has been registered successfully." \
+              .format(Markup.escape(name), Markup.escape(surname), 
+                      url_for('displayRecord', id=id)),
+                'success')
         form = None #clear the form
     
     if request.method == 'GET':
@@ -399,12 +405,91 @@ def searchAdmin():
     return render_template('search-results.html', user=session.get('user'),
                   results=results)
                   
-@app.route('/id/<id>')
+@app.route('/id/<id>', methods=['GET', 'POST'])
 def displayRecord(id):
   if session.get('logged_in'):
-    with app.app_context():
-      db = get_db()
-      form = db.getUserByID(id)
+    if request.method == "POST":
+      name = request.form['name']
+      surname = request.form['surname']
+      email = request.form['email']
+      admin = request.form.get('admin', False)
+      password = request.form['password']      
+      confirm_pass = request.form['confirm_pass']
+      dob = request.form['dob']
+      barcode = request.form['barcode']
+      license_number = request.form['license_number']
+      home_phone = request.form['home_phone']
+      mobile_phone = request.form['mobile_phone']
+      sms_capable = request.form.get('sms_capable', False)
+      newsletter = request.form.get('newsletter', False)
+      error = False
+      
+      #This might not be needed
+      if admin == "true": admin = True
+      if sms_capable == "true": sms_capable = True
+      if newsletter == "true": newsletter = True
+      app.logger.debug("SMS: " + str(sms_capable))
+      
+      if name == "":
+        flash("First name is a required field", 'error')
+        error = True
+      if surname == "":
+        flash("Surname is a required field", 'error')
+        error = True
+      if dob == "":
+        flash("Date of birth is a required field", 'error')
+        error = True
+        
+      #Validate date
+      try:
+        datetime.datetime.strptime(dob, "%Y-%m-%d").date()
+      except ValueError as e:
+        flash("Date of birth must be in YYYY-MM-DD format (e.g. 1990-10-21):" + \
+              " {0}".format(e.message), 'error')
+        error = True
+        
+      #validate email:
+      if email != "":
+        if not re.match("^[a-zA-Z0-9._%-+]+@[a-zA-Z0-9._%-]+.[a-zA-Z]{2,6}$", email):
+          flash("Please enter a valid email address", 'error')
+          error = True
+        
+      #validate password
+      if admin:
+        if email == "":
+          flash("You must specify an email to allow administrative access", 'error')
+          error = True
+        if password == "":
+          flash("You must specify a password to allow administrative access", 'error')
+          error = True
+        if password != confirm_pass:
+          flash("The passwords provided do not match.", 'error')
+          error = True
+      if password == "********************":
+        password = None
+        confirm_pass = None
+      if password == "": password = None
+      
+      if error:
+        form = request.form #Carryover entered form values
+      else:
+        with app.app_context(): #Show the saved values
+          db = get_db()
+          db.updateUser(id, name, surname, email=email, admin=admin, 
+                        password=password, dob=dob, newsletter=newsletter,
+                        license_number=license_number, home_phone=home_phone,
+                        mobile_phone=mobile_phone, sms=sms_capable)
+          db.storeBarcode(id, barcode)
+          db.commit()
+          form = db.getUserByID(id)
+          form['barcode'] = db.getBarcodeForId(id)
+          flash('Changes saved.', 'success')
+      
+    else: #Render GET request
+      with app.app_context():
+        db = get_db()
+        form = db.getUserByID(id)
+        form['barcode'] = db.getBarcodeForId(id)
     return render_template('profile.html', user=session.get('user'), form=form)
   
 @app.route('/checkin-note', methods=['GET'])

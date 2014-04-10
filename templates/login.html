@@ -6,8 +6,9 @@
     {{ navbar.top(site_title, 'index', sites=({'title' : 'Login', 'href' : None, 'active' : True},)) }}    
     <div class="well opaque">
       
-      
-      <h2 style="text-align: center">{{ site_title }} Login</h2><br>
+      <img id="login-logo" src="{{ url_for('static', filename='img/logo.png') }}">
+
+      <h2 style="text-align: center">{{ site_title }}</h2><br>
 
       {% with errors = get_flashed_messages(category_filter=["error"]) -%}
         {% if errors %}
