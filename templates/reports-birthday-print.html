@@ -1,0 +1,68 @@
+{% extends "printout.html" %}
+
+{% block title -%}
+  Birthday Report for {{ args.get('startdate', '') }} - {{ args.get('enddate', '') }}
+{%- endblock %}
+
+{% block body %}
+  {% if output != None and output|length > 0 %}
+  {% set tables = output[0] %}
+  {% set counts = output[1] %}
+  
+  <p>
+    <h1>Birthday Report</h1>
+    <strong>Start:</strong> {{ args.startdate }}<br>
+    <strong>End:</strong> {{ args.enddate }}
+  </p>
+  
+  <table class="table table-striped">
+   <thead>
+      <tr><th>Name</th><th>Contact</th><th>Birthdate</th><th>Current Age</th><th>Last Seen</th></tr>
+    </thead>
+    <tbody>
+      {% for row in output %}
+      <tr>
+        <td>
+          <a href="{{ url_for('displayRecord', id=row.id) }}">
+            {{ row.name }} {{ row.surname }}
+          </a>
+        </td>
+        <td>
+          {%- if row.email -%}
+            <button class="btn btn-default btn-xs">
+                <i class="glyphicon glyphicon-envelope"></i>
+                {{ row.email }}
+            </button>
+          {%- endif -%}
+          
+          <!-- home phone -->
+          {%- if row.home_phone -%}
+            <button class="btn btn-default btn-xs">
+              <i class="glyphicon glyphicon-earphone"></i>
+              {{ row.home_phone }}
+            </button>
+          {%- endif -%}
+          
+          <!-- mobile phone -->
+          {%- if row.mobile_phone -%}
+            <button class="btn btn-default btn-xs">
+              <i class="glyphicon glyphicon-phone"></i>
+              {{ row.mobile_phone }}
+            </button>
+          {%- endif -%}
+        </td>
+        <td>{{ row.dob }}</td>
+        <td>{{ row.age|int }}</td>
+        <td>{{ row.last_seen or '&mdash;'|safe }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+    {% if tables|length == 0 %}
+      <p>No results</p>
+    {% endif %}
+  {% else %}
+    <p>Report returned no results.</p>
+  {% endif %}
+{% endblock %}

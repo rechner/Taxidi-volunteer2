@@ -1,4 +1,5 @@
 {% extends "reports.html" %}
+{% block title %}Birthday Report{% endblock %}
 
 {% block parameters %}
   <form class="form-inline" role="form" action="{{ url_for('reportBuild', name='birthday') }}" method="GET">
@@ -66,7 +67,7 @@
         </td>
         <td>
           {%- if row.email -%}
-            <a href="mailto:{{ row.email }}?subject=Happy Birthday, {{ name }}!" 
+            <a href="mailto:{{ row.email }}?subject=Happy%20Birthday,%20{{ name }}"
                title="Send email to {{ row.email }}"
                class="btn btn-default btn-xs">
                 <i class="glyphicon glyphicon-envelope"></i>
