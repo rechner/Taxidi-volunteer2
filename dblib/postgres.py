@@ -409,7 +409,9 @@ class Database:
             if admin is False:
                 hash = "disabled"
             else:
-                hash = self.getUserHashByID(id) #Keep the old password     
+                old_hash = self.getUserHashByID(id) #Keep the old password
+                hash = old_hash['hash']
+                salt = old_hash['salt']
         else:
             hash = hashlib.sha256(salt + password).hexdigest()
             
