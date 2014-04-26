@@ -3,16 +3,38 @@
 
 {% block parameters %}
 
-  <form class="form-horizontal" role="form" method="GET"
+  <form class="form-horizontal" role="form" method="GET" id="parameters"
    action="{{ url_for('reportBuild', name='attendance') }}">
     <div class="form-group">
       <div class="col-md-4">
-        <div class="col-md-5">
-          <label class="control-label" for="reportdate">Report&nbsp;Date</label>
+        <div class="row">
+          <div class="col-md-5">
+            <label class="control-label" for="reportdate">Report&nbsp;Date</label>
+          </div>
+          <div class="col-md-7">
+            <input class="form-control" type="text" id="reportdate" name="reportdate" 
+             placeholder="YYYY-MM-DD" value="{{ args.get('reportdate', '') }}">
+          </div>
         </div>
-        <div class="col-md-7">
-          <input class="form-control" type="text" id="reportdate" name="reportdate" 
-           placeholder="YYYY-MM-DD" value="{{ args.get('reportdate', '') }}">
+        <div class="row">
+          <div class="col-md-6">
+          {%- if init != None -%}
+            <strong>Recent dates</strong>
+            <ul>
+              {%- for date in init.datelist[0:5] -%}
+                <li><a href="{{ url_for('reportBuild', name='attendance') }}?reportdate={{ date }}">{{ date }}</a></li>
+              {%- endfor -%}
+            </ul>
+          </div>
+          <div class="col-md-6">
+            &nbsp;
+            <ul>
+              {%- for date in init.datelist[5:10] -%}
+                <li><a href="{{ url_for('reportBuild', name='attendance') }}?reportdate={{ date }}">{{ date }}</a></li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+          </div>
         </div>
       </div>
            
