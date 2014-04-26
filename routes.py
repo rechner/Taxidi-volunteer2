@@ -239,6 +239,8 @@ def reportBuildCSV(name):
             data = f.read()
           
           date = request.args.get('reportdate', '')
+          if date == '':
+            date = request.args.get('startdate', '')
           filename = "report-{0}-{1}.csv".format(name, date)
           #Serve up the file:
           response = make_response(data)

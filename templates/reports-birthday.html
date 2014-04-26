@@ -1,0 +1,123 @@
+{% extends "reports.html" %}
+
+{% block parameters %}
+  <form class="form-inline" role="form" action="{{ url_for('reportBuild', name='birthday') }}" method="GET">
+    <div class="form-group">
+      <div class="col-md-2">
+        <label class="control-label" for="reportdate">Date Range</label>
+      </div>
+      <div class="col-md-3">
+        <input class="form-control" type="text" id="startdate" name="startdate" 
+         placeholder="YYYY-MM-DD" value="{{ args.get('startdate', '') }}">
+      </div>
+      <div class="col-md-4" style="padding-left: 5px;">
+        <div class="col-md-1" style="padding-left: 0px;">
+          <label for="enddate">to</label>
+        </div>
+        <div class="col-md-10">
+          <input class="form-control" type="text" id="enddate" name="enddate"
+          placeholder="YYYY-MM-DD" value="{{ args.get('enddate', '') }}">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary" type="submit">Submit</button>
+      </div>
+    </div>
+  </form>
+  
+  <script>
+    $(function() {
+      $( document ).tooltip();
+      $( "#startdate" ).datepicker({
+        changeMonth: true,
+        dateFormat: 'yy-mm-dd',
+        defaultDate: "+1w",
+        numberOfMonths: 2,
+        onClose: function( selectedDate ) {
+          $( "#enddate" ).datepicker( "option", "minDate", selectedDate );
+        }
+      });
+      $( "#enddate" ).datepicker({
+        changeMonth: true,
+        dateFormat: 'yy-mm-dd',
+        defaultDate: "+1w",
+        numberOfMonths: 2,
+        onClose: function( selectedDate ) {
+          $( "#startdate" ).datepicker( "option", "maxDate", selectedDate );
+        }
+      });
+    });
+  </script>
+{% endblock %}
+
+{% block output %}
+  {% if output != None and output|length > 0 %}
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>Contact</th><th>Birthdate</th><th>Current Age</th><th>Last Seen</th></tr>
+    </thead>
+    <tbody>
+      {% for row in output %}
+      <tr>
+        <td>
+          <a href="{{ url_for('displayRecord', id=row.id) }}">
+            {{ row.name }} {{ row.surname }}
+          </a>
+        </td>
+        <td>
+          {%- if row.email -%}
+            <a href="mailto:{{ row.email }}?subject=Happy Birthday, {{ name }}!" 
+               title="Send email to {{ row.email }}"
+               class="btn btn-default btn-xs">
+                <i class="glyphicon glyphicon-envelope"></i>
+            </a>
+          {%- else -%}
+            <a href="#" style="visibility: hidden" class="btn btn-default btn-xs">
+              <i class="glyphicon glyphicon-envelope"></i>
+            </a>
+          {%- endif -%}
+          
+          <!-- home phone -->
+          {%- if row.home_phone -%}
+            <a href="tel:{{ row.home_phone }}" class="btn btn-default btn-xs"
+               title="Home Phone: {{ row.home_phone }}">
+              <i class="glyphicon glyphicon-earphone"></i>
+            </a>
+          {%- else -%}
+            <a href="#" style="visibility: hidden" class="btn btn-default btn-xs">
+              <i class="glyphicon glyphicon-earphone"></i>
+            </a>
+          {%- endif -%}
+          
+          <!-- mobile phone -->
+          {%- if row.mobile_phone -%}
+            <a href="tel:{{ row.mobile_phone }}" class="btn btn-default btn-xs"
+               title="Mobile Phone: {{ row.mobile_phone }}">
+              <i class="glyphicon glyphicon-phone"></i>
+            </a>
+          {%- else -%}
+            <a href="#" style="visibility: hidden" class="btn btn-default btn-xs">
+              <i class="glyphicon glyphicon-phone"></i>
+            </a>
+          {%- endif -%}
+        </td>
+        <td>{{ row.dob }}</td>
+        <td>{{ row.age|int }}</td>
+        <td>{{ row.last_seen or '&mdash;'|safe }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+    {% if output|length == 0 %}
+      <p>No results</p>
+    {% endif %}
+  {% else %}
+  <p>Please select a date to run report</p>
+  <script>
+    $(function() {
+      $("#reportdate").datepicker('setDate', new Date());
+    });
+  </script>
+  {% endif %}
+  
+{% endblock %}
