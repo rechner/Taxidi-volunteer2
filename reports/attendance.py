@@ -8,6 +8,14 @@ import csv
 name = "Attendance"
 context = ('activities', 'services')
 
+def init(db=None, request=None):
+  if request is None or db is None:
+    return None
+  
+  sth = db.execute("SELECT DISTINCT date(checkin) FROM statistics LIMIT 10")
+  return {'datelist' : [ a[0] for a in sth ]}
+  
+
 def build(db=None, request=None):
   date = request.args.get('reportdate', None)
   if request is None or db is None or date is None:
@@ -25,7 +33,13 @@ def build(db=None, request=None):
                  if str(service['id']) in selected_services ]
   activities = [ activity['name'] for activity in db_activities \
                  if str(activity['id']) in selected_activities ]
-
+                 
+  if selected_activities == []:
+    activities = [ activity['name'] for activity in db_activities ]
+    
+  if selected_services == []:
+    services = [ service['name'] for service in db_services ]
+    
   counts = {}
   output = {}
   #Fetch order by activity for each service:

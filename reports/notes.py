@@ -3,6 +3,9 @@ import csv
 name = "%note_title%"
 context = ()
 
+def init(db=None, request=None):
+  return None
+
 def build(db=None, request=None):
   if request is not None and db is not None:
     date = request.args.get('reportdate', None)

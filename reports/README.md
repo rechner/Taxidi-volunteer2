@@ -16,18 +16,27 @@ a printer-friendly view.  See the presentation section for more details.
 
 Reporting logic files must implement the following attributes:
 
-	name = "Friendly Report Name"
-	context = () #Optional
-	
-	def build(db=None, request=None):
-		pass
-		
-	def build_csv(results, csvfile):
-		pass
-		
+  name = "Friendly Report Name"
+  context = () #Optional
+  
+  def init(db=None, request=None):
+    pass
+  
+  def build(db=None, request=None):
+    pass
+    
+  def build_csv(results, csvfile):
+    pass
+    
 The name attribute is a string representation for the name of the report.
 This can be anything, but the special name `"%note_title%"` will be replaced
 by the meta name for the `note` column in the database.
+
+## init() ##
+
+This function is run each time the form is requested, either as part of a
+report or when displaying a blank form.  The result from this function is
+available from the template in the `init` variable.
 
 ## build() ##
 

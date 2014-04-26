@@ -40,6 +40,17 @@ def profile(): #Perhaps this should just be a shortlink to /id/<id>
 def change_password():
   if session.get('logged_in'):
     return render_template('admin-change-password.html', user=session.get('user'))
+    
+@app.route('/admin/activities/')
+def edit_activites():
+  if session.get('logged_in'):
+    return render_template('admin-edit-activites.html', user=session.get('user'))
+    
+@app.route('/admin/activities/edit')
+def edit_activites_ajax():
+  if session.get('logged_in'):
+    if request.method == "POST":
+      pass
 
 @app.route('/admin')
 def admin():
@@ -186,6 +197,11 @@ def reportBuild(name):
       except ImportError:
         return abort(404)
         
+      # Run report initializer function
+      init_data = None
+      if hasattr(report_function, 'init'):
+        init_data = report_function.init(db=db, request=request)
+        
       #import the appropriate context:
       if hasattr(report_function, 'context'):
         if 'activities' in report_function.context:
@@ -197,7 +213,7 @@ def reportBuild(name):
       return render_template('reports-{0}.html'.format(name), user=session.get('user'), 
         note_title=note_title, show_actions=show_actions, output=output, args=request.args,
         available_reports=report_plugins.available_reports, name=name,
-        query_string=request.query_string)
+        query_string=request.query_string, init=init_data)
     except jinja2.exceptions.TemplateNotFound:
       app.logger.error("Reporting plugin '{0}' has no matching template.".format(name))
       flash(u"Reporting plugin '{0}' has no matching template. ".format(name), 'error')
@@ -591,8 +607,8 @@ def _jinja2_filter_datetime(date, fmt=None):
 @app.template_filter('timedelta')
 def _jinja2_filter_timedelta(timedelta):
   hours, remainder = divmod(timedelta.seconds, 3600)
-  minutes, seconds = divmod(timedelta.seconds, 60)
-  return '%s:%s:%s' % (hours, minutes, seconds)
+  minutes, seconds = divmod((timedelta.seconds - (3600*hours)), 60)
+  return '%s:%02d:%02d' % (hours, minutes, seconds)
   
   
 """
