@@ -1,10 +1,45 @@
 {% extends "layout.html" %}
 {% block title %}DreamTeam Check-in — Administration{% endblock %}
 {% import 'navbar-admin.html' as navbar %}
+{% block head %}
+  <!-- bootstrap editable widget -->
+  <link href="{{ url_for('static', filename='css/bootstrap-editable.css') }}" rel="stylesheet">
+  <script src="{{ url_for('static', filename='js/bootstrap-editable.js') }}"></script>
+{% endblock %}
 {% block body %}
   <div class="container">
     {{ navbar.top('Volunteers', url_for('index'), user) }}    
     <div class="well opaque">
+      
+      <!-- error -->
+      <div class="">
+      {% with errors = get_flashed_messages(category_filter=["error"]) -%}
+        {% if errors %}
+          <div class="alert alert-danger">
+            <ul>
+            {% autoescape false %}
+            {%- for msg in errors %}
+              <li>{{ msg }}</li>
+            {% endfor -%}
+            {% endautoescape %}
+            </ul>
+          </div>  
+        {% endif %}
+      {%- endwith %}
+      </div>
+      
+      <!-- success -->
+      {% with success = get_flashed_messages(category_filter=["success"]) -%}
+        {% if success %}
+          {% autoescape false %}
+          {%- for msg in success %}
+            <div class="alert alert-success text-center">
+              {{ msg }}
+            </div>
+          {% endfor -%}
+          {% endautoescape %}
+        {% endif %}
+      {%- endwith %}
       
       <div class="row">
         <div class="col-md-6">
@@ -12,14 +47,21 @@
             <div class="panel-heading">
               <span class="pull-right">
                 <span class="glyphicon glyphicon-edit"></span>
-                <a href="#">Edit Activities</a>
+                <a href="{{ url_for('edit_activities') }}">Edit Activities</a>
               </span>
               <h3 class="panel-title">Activities</h3>
             </div>
             <div class="panel-body">
               <ul class="col col-2">
                 {% for activity in activities -%}
-                  <li><a href="activity/{{ activity.id }}">{{ activity.name }}</a></li>
+                  <li>
+                    <a class="editable" data-type="text" data-name="name"
+                     data-url="{{ url_for('edit_activities_ajax') }}" 
+                     data-pk="{{ activity.id }}" data-title="Edit Activity Name"
+                     title="Click to edit activity name">
+                      {{ activity.name }}
+                    </a>
+                  </li>
                 {%- endfor %}
               </ul>
             </div>
@@ -41,4 +83,11 @@
       
     </div>
   </div>
+  
+  <script>
+  $(function () {
+    $('.editable').editable();
+  });
+  </script>
+      
 {% endblock %}

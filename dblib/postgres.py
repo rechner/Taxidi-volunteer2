@@ -239,7 +239,7 @@ class Database:
     """
     def getActivities(self):
         logging.debug("Fetch all activities getActivities()")
-        a = self.execute("SELECT id, name, admin FROM activities;")
+        a = self.execute("SELECT id, name, admin FROM activities ORDER BY id;")
         return self.getNestedDictionary(a)
         
     """
@@ -268,6 +268,28 @@ class Database:
         logging.debug(u"Adding activity '{0}' with admin '{1}'".format(name, admin))
         self.execute("INSERT INTO activities(name, admin) VALUES (%s, %s);", 
                      (name, admin))
+    
+    """
+    Changes an activity's name or administrator.  Admin should be the id of
+    the person in charge of activity.
+    """
+    def updateActivity(self, id, name=None, admin=None):
+        if (id is None) or (name is None and admin is None):
+            return None
+        if admin is None: #Update name only
+            logging.debug(u"Updating activity {0} to '{0}'".format(id, name))
+            self.execute("UPDATE activities SET name = %s WHERE id = %s",
+                         (name, id))
+        elif name is None:
+            logging.debug(u"Updating activity {0} with admin {1}".format(id, admin))
+            self.execute("UPDATE activities SET admin = %s WHERE id = %s",
+                         (admin, id))
+        else: #Update name and admin
+            logging.debug(u"Updating activity {0} to '{1}' with admin {2}"
+                .format(id, name, admin))
+            self.execute("UPDATE activities SET name = %s, admin = %s WHERE id = %s",
+                         (name, admin, id))
+        
                      
     """
     Deletes activity by id.
@@ -532,13 +554,22 @@ class Database:
     """
     Searches by name.
     Returns *.  '*' and '%' are treated as wild-card characters, and will
-    search using the LIKE operator.
+    search using the LIKE operator.  If autocomplete is set to True,
+    only the id and full name will be returned in the dataset.
     """
-    def searchName(self, query):        
+    def searchName(self, query, autocomplete=False):
         if ("%" in query) or ("*" in query):
             query = query.replace("*", "%")
-            
-        a = self.execute("""SELECT DISTINCT {0} FROM "users" WHERE
+        
+        if autocomplete:
+            a = self.execute("""SELECT DISTINCT 
+                id, name || ' ' || surname as label, 
+                name || ' ' || surname as value
+                FROM "users" WHERE
+                name ILIKE %s OR surname ILIKE %s OR
+                (name || ' ' || surname) ILIKE %s""", (query+'%',)*3)
+        else:
+            a = self.execute("""SELECT DISTINCT {0} FROM "users" WHERE
                 name ILIKE %s OR surname ILIKE %s OR
                 (name || ' ' || surname) ILIKE %s;""".format(self.columns),
                 (query,)*3)
@@ -667,6 +698,11 @@ this code.  Notify user to backup and upgrade before continuing.
 """
 class SchemaVersionException(Exception):
     pass
+    
+"""
+Thrown if a modifying query violates a forgein key or column constraint.
+"""
+IntegrityError = psycopg2.IntegrityError
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
@@ -713,5 +749,5 @@ if __name__ == "__main__":
     
     #~ print db.search('TEST12345')
     
-    db.close() 
+    db.close()
    
