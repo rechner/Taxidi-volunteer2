@@ -500,6 +500,7 @@ def deleteUser(id):
     user = db.getUserByID(id)
     if user is not None:
       db.deleteUser(id)
+      db.commit()
       flash('{0} {1} has been succesfully deleted.'
         .format(Markup.escape(user['name']), 
                 Markup.escape(user['surname'])),
