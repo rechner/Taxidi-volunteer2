@@ -352,7 +352,7 @@ class Database:
         (person, checkin, service, activity, note) VALUES 
         (%s, NOW(), %s, %s, %s);""", (person, services, activities, note))
         a = self.execute("""UPDATE users SET last_seen = now() WHERE
-        person = %s""", (person,))
+        id = %s""", (person,))
         
     def doCheckout(self, person):
         a = self.execute("""UPDATE statistics SET checkout = NOW() WHERE
