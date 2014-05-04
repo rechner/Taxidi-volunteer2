@@ -12,7 +12,8 @@ def init(db=None, request=None):
   if request is None or db is None:
     return None
   
-  sth = db.execute("SELECT DISTINCT date(checkin) FROM statistics LIMIT 10")
+  sth = db.execute("""SELECT DISTINCT date(checkin) FROM statistics 
+                      ORDER BY date DESC LIMIT 10""")
   return {'datelist' : [ a[0] for a in sth ]}
   
 
