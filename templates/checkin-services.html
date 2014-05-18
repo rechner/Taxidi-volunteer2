@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% import 'timeout.html' as timeout %}
-{% block title %}Select Activity{% endblock %}
+{% block title %}Select Service{% endblock %}
 {% block body %}
   <div class="container">   
     <div class="well opaque">
@@ -30,7 +30,12 @@
       {%- endwith %}
       
       <hr>
-      <form role="form" action="{{ url_for('checkinNote') }}" method="GET" name="activity">
+      {%- if kiosk.opt_service -%}
+        {%- set endpoint = 'checkinOptService' -%}
+      {%- else -%}
+        {%- set endpoint = 'checkinNote' -%}
+      {%- endif -%}
+      <form role="form" action="{{ url_for(endpoint) }}" method="GET" name="activity">
         <input type="hidden" name="search" value="{{ search }}">
         <input type="hidden" name="id" value="{{ id }}">
         {% for activity in activities %}

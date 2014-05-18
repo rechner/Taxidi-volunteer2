@@ -26,7 +26,8 @@
 
       <div class="row">
         <div class="col-md-4"></div>
-          <form class="form-horizontal col-md-4" role="form" action="{{ url_for('login') }}" method="POST" name="Login">          
+          <form class="form-horizontal col-md-4" role="form" action="{{ url_for('login') }}" method="POST" name="Login">
+            <input type="hidden" name="next" value="{{ next_url }}">
             <div class="form-group">
                 <label for="email" class="col-lg-4 control-label">E-Mail</label>
                 <div class="col-lg-8">

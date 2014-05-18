@@ -49,6 +49,11 @@ def profile(): #Perhaps this should just be a shortlink to /id/<id>
 @login_required
 def change_password():
   return render_template('admin-change-password.html', user=session.get('user'))
+  
+@app.route('/admin/kiosk')
+@login_required
+def kiosk_settings():
+  return render_template('kiosk-settings.html', user=session.get('user'), form={})
     
 @app.route('/admin/activities/')
 @login_required
@@ -519,16 +524,21 @@ def login():
     if request.method == 'POST':
       email = request.form["email"]
       password = request.form["password"]
+      next = request.form["next"]
       auth = db.authenticate(email, password)
       if auth[0]: #Success
         session['logged_in'] = True
         #~ auth[1]['dob'] = auth[1]['dob'].isoformat() if hasattr('isoformat')
         session['user'] = auth[1]
-        return redirect(url_for('index'))
+        if next is not None:
+          return redirect(next)
+        else:
+          return redirect(url_for('index'))
       else:
         flash("Username or password is incorrect", "error")
-    
-  return render_template('login.html', site_title=site_title)
+    else:
+      next = request.args.get("next", None)
+  return render_template('login.html', site_title=site_title, next_url=next)
   
 @app.route('/logout')
 def logout():
@@ -538,13 +548,17 @@ def logout():
   return redirect(url_for('index'))
     
 def fetchKioskConstants():
+  #TODO: This should probably get cached
   db = get_db()
   timeout = db.getMeta('kiosk_timeout')
   warning = db.getMeta('kiosk_timeout_warning')
   title = db.getMeta('kiosk_timeout_title')
   msg = db.getMeta('kiosk_timeout_message')
+  clock_in = db.getMeta('kiosk_clock_in')
+  clock_out = db.getMeta('kiosk_clock_out')
   return { 'timeout' : timeout, 'timeout_warning' : warning,
-            'timeout_title' : title, 'timeout_message' : msg }
+            'timeout_title' : title, 'timeout_message' : msg,
+            'clock_in' : clock_in, 'clock_out' : clock_out }
     
 @app.route('/timeclock')
 def timeclock(error=None):
@@ -624,10 +638,33 @@ def selectServices():
     services = db.getServices()
     kiosk = fetchKioskConstants()
     title = db.getMeta('kiosk_service_title')
-    allow_multiple = db.getMeta('kiosk_service_allow_multiple')
+    allow_multiple = dbBool(db.getMeta('kiosk_service_allow_multiple'))
+    kiosk["opt_service"] = dbBool(db.getMeta('kiosk_opt_service'))
     
   return render_template('checkin-services.html', search=search, activities=activities, id=ID,
                 services=services, kiosk=kiosk, title=title, allow_multiple=allow_multiple)
+      
+@app.route('/select-opt-service', methods=['GET'])
+def checkinOptService():
+  with app.app_context():
+    db = get_db()
+    search = request.args.get('search', '')
+    ID = request.args.get('id', '')
+    activities = request.args.getlist("activity")
+    services = request.args.getlist("service")
+    opt_services = db.getServices()
+    kiosk = fetchKioskConstants()
+    title = db.getMeta('kiosk_service_opt_title')
+    allow_multiple = dbBool(db.getMeta('kiosk_service_opt_allow_multiple'))
+    
+    if len(services) == 0:
+      flash("You must pick at least one service", "error")
+      return selectServices()
+    
+  return render_template('checkin-opt-services.html', search=search, activities=activities, id=ID,
+                services=services, kiosk=kiosk, title=title, allow_multiple=allow_multiple,
+                opt_services=opt_services)
+  pass
   
 @app.route('/checkin-note', methods=['GET'])
 def checkinNote():
@@ -636,17 +673,18 @@ def checkinNote():
   #parse and validate selected activities:
   activities = request.args.getlist("activity")
   services = request.args.getlist("service")
+  opt_services = request.args.getlist("opt_services")
   if len(services) == 0:
     flash("You must pick at least one service", "error")
     return selectServices()
     
   with app.app_context():
-    db = get_db()
+    db = get_db()    
     kiosk = fetchKioskConstants()
     title = db.getMeta('kiosk_note_title')
     
   return render_template('checkin-note.html', kiosk=kiosk, title=title, id=ID, search=search,
-                  activities=activities, services=services)
+                  activities=activities, services=services, opt_services=opt_services)
   
 @app.route('/checkin-confirm', methods=['POST'])
 def checkinConfirm():
@@ -655,6 +693,7 @@ def checkinConfirm():
   #parse and validate selected activities:
   activitiesID = request.form.getlist("activity")
   servicesID = request.form.getlist("service")
+  opt_servicesID = request.form.getlist("opt_services")
   note = request.form.get('message', None)
   if note == '': note = None
   
@@ -671,13 +710,17 @@ def checkinConfirm():
     services = db.getServiceNameList(servicesID)
     servicesString = ", ".join(services)
     servicesString = servicesString.decode('utf8')
+    opt_services = db.getServiceNameList(opt_servicesID)
+    opt_servicesString = ", ".join(opt_services)
+    opt_servicesString = servicesString.decode('utf8')
     
     #Record the check-in
-    db.doCheckin(person['id'], activities, services, note)
+    db.doCheckin(person['id'], activities, services, note, opt_services)
     db.commit()
     
   return render_template('checkin-confirm.html', person=person, activities=activitiesString,
-                    services=servicesString, note=note, note_title=note_title)
+                    services=servicesString, note=note, note_title=note_title,
+                    opt_services=opt_servicesString)
               
   
 @app.errorhandler(500)
@@ -710,6 +753,14 @@ def connect_db():
   passwd = app.config['DB_PASSWORD']
   app.logger.debug("Attempting to open database {0}@{1}...".format(dbname, hostname))
   return database.Database(hostname, dbname, user, passwd) 
+  
+def dbBool(string):
+  if string == 't':
+    return True
+  elif string == 'f':
+    return False
+  else:
+    raise ValueError("Expected either 't' or 'f'")
   
 @app.teardown_request
 @app.teardown_appcontext

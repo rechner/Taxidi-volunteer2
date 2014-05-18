@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS "user_openid"
 CREATE TABLE IF NOT EXISTS "statistics"
 	("id" SERIAL PRIMARY KEY, 
 	"person" INT DEFAULT 1 REFERENCES users(id) ON DELETE SET DEFAULT, 
-	"checkin" timestamp, "checkout" timestamp,
-	"service" text[], "activity" text[], "note" text); 
+	"checkin" timestamp, "checkout" timestamp, "service" text[], 
+	"service_opt" text[], "activity" text[], "note" text); 
 
 -- Default user referenced by the statistics table, if record is deleted:
 INSERT INTO "users" (id, name, surname, locked, join_date, hash) VALUES
@@ -83,6 +83,17 @@ UPDATE "_meta" SET "str_value" = 'Select Services' WHERE "key" = 'kiosk_service_
 INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_service_allow_multiple', 't');
 UPDATE "_meta" SET "str_value" = 't' WHERE "key" = 'kiosk_service_allow_multiple';
 
+-- Optionally show a secondary service prompt, to see which service a volunteer
+-- is attending or for split-service events
+INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_opt_service', 'f');
+UPDATE "_meta" SET "str_value" = 'f' WHERE "key" = 'kiosk_opt_service';
+-- kiosk_opt_service_title
+INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_service_opt_title', 'Select Service Attending');
+UPDATE "_meta" SET "str_value" = 'Select Service Attending' WHERE "key" = 'kiosk_service_opt_title';
+-- checkboxes or radiobuttons for the service attending selection? (default: radiobutton)
+INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_service_opt_allow_multiple', 'f');
+UPDATE "_meta" SET "str_value" = 'f' WHERE "key" = 'kiosk_service_opt_allow_multiple';
+
 -- Check-in note title (e.g. 'Prayer Request')
 INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_note_title', 'Check-in Note');
 UPDATE "_meta" SET "str_value" = 'Check-in Note' WHERE "key" = 'kiosk_note_title';
@@ -102,3 +113,10 @@ UPDATE "_meta" SET "str_value" = NULL WHERE "key" = 'kiosk_timeout_message';
 -- Timeout warning dialogue title: (NULL for the template default)
 INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_timeout_title', NULL);
 UPDATE "_meta" SET "str_value" = NULL WHERE "key" = 'kiosk_timeout_title';
+
+-- "Clock-in" and "Clock-out" messages.  Volunteer organizations might prefer
+-- "Check-in"/"Check-out" instead.
+INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_clock_in', 'Clock in');
+UPDATE "_meta" SET "str_value" = 'Clock in' WHERE "key" = 'kiosk_clock_in';
+INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_clock_out', 'Clock out');
+UPDATE "_meta" SET "str_value" = 'Clock out' WHERE "key" = 'kiosk_clock_out';

@@ -1,8 +1,7 @@
 {% extends "layout.html" %}
 {% import 'timeout.html' as timeout %}
-{% block title %}Select Activity{% endblock %}
+{% block title %}Select Optional Service{% endblock %}
 {% block body %}
-
   <div class="container">   
     <div class="well opaque">
       
@@ -31,39 +30,40 @@
       {%- endwith %}
       
       <hr>
-      
-      <div id="note">
-        <form role="form" action="{{ url_for('checkinConfirm') }}" method="POST" name="activity">
-          <input type="hidden" name="search" value="{{ search }}">
-          <input type="hidden" name="id" value="{{ id }}">
-          {% for activity in activities -%}
-            <input type="hidden" name="activity" value="{{ activity }}">
-          {% endfor %}
-          {% for service in services %}
-            <input type="hidden" name="service" value="{{ service }}">
-          {%- endfor %}
+      <form role="form" action="{{ url_for('checkinNote') }}" method="GET" name="activity">
+        <input type="hidden" name="search" value="{{ search }}">
+        <input type="hidden" name="id" value="{{ id }}">
+        {% for activity in activities %}
+          <input type="hidden" name="activity" value="{{ activity }}">
+        {% endfor %}
+        {% for service in services %}
+          <input type="hidden" name="service" value="{{ service }}">
+        {% endfor %}
+        <div id="services">
           {% for service in opt_services %}
-            <input type="hidden" name="opt_services" value="{{ service }}">
-          {%- endfor %}          
           <div class="row">
-            <div class="input-large col-md-offset-3 col-md-6">
-              <textarea id="message" name="message" class="textarea-large" 
-               rows="4" autofocus onKeyDown="reset_interval()"></textarea>
+            <div class="col-md-6 col-md-offset-3">
+              <label class="btn btn-default btn-block btn-lg" for="toggle{{ service.id }}">
+                <input id="toggle{{ service.id }}" 
+                 type="{{ "checkbox" if allow_multiple else "radio" }}" name="opt_services" 
+                 value="{{ service.id }}"> <strong>{{ service.name }}</strong> 
+                 <small>({{ service.start_time|strftime }} - {{ service.end_time|strftime }})</small>
+              </label>
             </div>
           </div>
+          <br>
+          {% endfor %}
         
-          <hr>
+        <hr>
         
         <div class="row">
           <div class="col-md-4 col-md-offset-4">
             <button type="submit" class="btn btn-primary btn-block btn-lg">Continue <span class="glyphicon glyphicon-arrow-right"></span></button>
           </div>
         </div>
-        
       </form>
     </div>
-    </div>
   </div>
-  
- {{ timeout.timeout(kiosk.timeout, kiosk.timeout_warning, title=kiosk.timeout_title, message=kiosk.timeout_message) }}
+
+  {{ timeout.timeout(kiosk.timeout, kiosk.timeout_warning, title=kiosk.timeout_title, message=kiosk.timeout_message) }}
 {% endblock %}
