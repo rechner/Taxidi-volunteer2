@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Hello, World!{% endblock %}
+{% block title %}{{ title }} - Login{% endblock %}
 {% import 'navbar.html' as navbar %}
 {% block body %}
   <div class="container">
@@ -15,6 +15,16 @@
           {%- for msg in errors %}
             <div class="alert alert-danger text-center">
               <strong>Error: </strong> {{ msg }}
+            </div>
+          {% endfor -%}
+        {% endif %}
+      {%- endwith %}
+      
+      {% with errors = get_flashed_messages(category_filter=["success"]) -%}
+        {% if errors %}
+          {%- for msg in errors %}
+            <div class="alert alert-success text-center">
+              {{ msg }}
             </div>
           {% endfor -%}
         {% endif %}

@@ -169,14 +169,15 @@ class Database:
         Creates tables for the first time (init schema version 0)
         """
         logging.debug("Enter InitDb()")
+        dbVersion = 0
         try:
             dbVersion = self.getMeta('schema_version')
             logging.debug("Database schema version: ({0})".format(dbVersion))
-        except psycopg2.OperationalError as e:
+        except psycopg2.ProgrammingError as e:
             #Database hasn't been initialized (or _meta table is missing)
             logging.warn(e)
-            self.cursor.set_isolation_level(0) #Enter autocommit mode
-            self.upgradeSchema(0)
+            self.conn.set_isolation_level(0) #Enter autocommit mode
+            self._upgradeSchema(0)
             
         if dbVersion < _schema_version:
             logging.warn("Database schema version %n is older than code schema version %n", 
@@ -195,11 +196,12 @@ class Database:
                 self.upgradeSchema(version)
             
     def _upgradeSchema(self, version):
-        self.warn("Performing schema version upgrade.")
-        self.cursor.set_isolation_level(0) #Enter autocommit mode
-        self.debug("Enter autocomit mode: set_isolation_level(0)")
-        with open(os.join("schema", str(version) + ".sql")) as f:
-            self.debug("Execute schema file: {0}".format(f.name))
+        logging.warn("Performing schema version upgrade.")
+        self.conn.set_isolation_level(0) #Enter autocommit mode
+        logging.debug("Enter autocomit mode: set_isolation_level(0)")
+        module_dir = os.path.dirname(__file__)
+        with open(os.path.join(module_dir, "schema", str(version) + ".sql")) as f:
+            logging.debug("Execute schema file: {0}".format(f.name))
             try:
                 self.cursor.execute(f.read())
             except psycopg2.OperationalError as e:
@@ -208,8 +210,13 @@ class Database:
                 logging.error(e)
                 raise DatabaseError(RESET_TABLES|FAIL, 
                     "Unable to initialize database schema version "+str(version))
-        self.cursor.set_isolation_level(1) #Go back to transaction mode
-        self.debug("Exit autocommit mode: set_isolation_level(1)")
+            except psycopg2.IntegrityError as e:
+                logging.error("Database returned an integrity error.")
+                logging.error("This should only happen if an old schema is reinitalized.")
+                logging.error(e)
+                #This is a recoverable error
+        self.conn.set_isolation_level(1) #Go back to transaction mode
+        logging.debug("Exit autocommit mode: set_isolation_level(1)")
             
     #FIXME
     def backupDatabase(self, filename):
@@ -375,6 +382,15 @@ class Database:
     
     #=== Users ===
     #==== CRUD ====
+    def userCount(self):
+        """
+        The user count will be 1 if the database has just been initialized,
+        so we'll use that to tell if we should create the first admin
+        user.
+        """
+        a = self.execute("SELECT COUNT(id) FROM users")
+        return a[0][0]
+        
     def userExists(self, name, surname, email):
         a = self.execute("""SELECT id FROM users WHERE name = %s AND
         surname = %s AND email = %s""", (name, surname, email))

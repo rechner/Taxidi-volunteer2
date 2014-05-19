@@ -538,6 +538,11 @@ def login():
         flash("Username or password is incorrect", "error")
     else:
       next = request.args.get("next", None)
+    
+    #First time setup?
+    user_count = db.userCount()
+    if user_count == 1:
+      return redirect(url_for('install'))
   return render_template('login.html', site_title=site_title, next_url=next)
   
 @app.route('/logout')
@@ -546,6 +551,50 @@ def logout():
   session.pop('user', None)
   flash("You were logged out succesfully", "info")
   return redirect(url_for('index'))
+  
+@app.route('/install', methods=['GET', 'POST'])
+def install():
+  with app.app_context():
+    db = get_db()
+    user_count = db.userCount()
+    
+    if user_count == 1:
+      if request.method == 'POST':
+        name = request.form.get("name", '')
+        surname = request.form.get("surname", '')
+        email = request.form.get("email", '')
+        password = request.form.get("password", '')
+        confirm_pass = request.form.get("confirm_pass", '')
+        
+        #Validate form:
+        error = False
+        if name == '':
+          flash("Display name is required", "error")
+          error = True
+        if email == '':
+          flash("Login name or email is required", "error")
+          error = True
+        if password == '':
+          flash("A password is required for the administrator account", "error")
+          error = True
+        if password != confirm_pass:
+          flash("The passwords entered do not match", "error")
+          error = True
+        if len(password) < 6:
+          flash("Passwords should be six or more characters. " + 
+                "Consider changing your password", "info")
+        
+        if not error:
+          db.addUser(name, surname, email=email, admin=True, password=password)
+          db.commit()
+          flash("Admin account created succesfully.  "+
+                "Login with the username '{0}'".format(email), "success")
+          return redirect(url_for('admin'))
+      
+      return render_template('install.html', form=request.form)
+        
+  return redirect(url_for('admin'))
+  
     
 def fetchKioskConstants():
   #TODO: This should probably get cached
