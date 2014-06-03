@@ -3,48 +3,48 @@
 -- For now, table upgrades will have to be done by hand.
 
 CREATE TABLE IF NOT EXISTS "_meta" 
-	("key" text NOT NULL PRIMARY KEY, "int_value" int, "str_value" text);
+  ("key" text NOT NULL PRIMARY KEY, "int_value" int, "str_value" text);
 
 CREATE TABLE IF NOT EXISTS "users"
-	("id" SERIAL PRIMARY KEY, "name" text, "surname" text, 
-	"email" text, "salt" text, "hash" VARCHAR(256) DEFAULT 'disabled', 
-	"home_phone" text, "mobile_phone" text, 
-	"sms_capable" boolean DEFAULT FALSE, "dob" DATE, 
-	"license_number" text, "email_verified" boolean DEFAULT FALSE, 
-	"newsletter" boolean DEFAULT FALSE, "admin" boolean DEFAULT FALSE, 
-	"join_date" timestamp DEFAULT NOW(),
-	"last_login" timestamp, "last_seen" timestamp, 
-	"last_updated" timestamp, "locked" boolean DEFAULT FALSE); 
-	
+  ("id" SERIAL PRIMARY KEY, "name" text, "surname" text,
+  "email" text, "salt" text, "hash" VARCHAR(256) DEFAULT 'disabled',
+  "home_phone" text, "mobile_phone" text,
+  "sms_capable" boolean DEFAULT FALSE, "dob" DATE,
+  "license_number" text, "email_verified" boolean DEFAULT FALSE,
+  "newsletter" boolean DEFAULT FALSE, "admin" boolean DEFAULT FALSE,
+  "join_date" timestamp DEFAULT NOW(),
+  "last_login" timestamp, "last_seen" timestamp,
+  "last_updated" timestamp, "locked" boolean DEFAULT FALSE);
+  
 CREATE TABLE IF NOT EXISTS "services"
-	("id" SERIAL PRIMARY KEY, "name" text NOT NULL, 
-	"day" INT CHECK (day >= 0 AND day <= 7), 
-	start_time TIME WITHOUT TIME ZONE NOT NULL, 
-	end_time TIME WITHOUT TIME ZONE NOT NULL); 
-	
+  ("id" SERIAL PRIMARY KEY, "name" text NOT NULL, 
+  "day" INT CHECK (day >= 0 AND day <= 7), 
+  start_time TIME WITHOUT TIME ZONE NOT NULL, 
+  end_time TIME WITHOUT TIME ZONE NOT NULL); 
+  
 CREATE TABLE IF NOT EXISTS "activities"
-	("id" SERIAL PRIMARY KEY, "name" text UNIQUE NOT NULL, 
-	"admin" INT DEFAULT 1 REFERENCES users(id) ON DELETE SET DEFAULT); 
-	
+  ("id" SERIAL PRIMARY KEY, "name" text UNIQUE NOT NULL, 
+  "admin" INT DEFAULT 1 REFERENCES users(id) ON DELETE SET DEFAULT); 
+  
 CREATE TABLE IF NOT EXISTS "barcode"
-	("id" SERIAL PRIMARY KEY, "value" text NOT NULL, 
-	"person" INT REFERENCES users(id) ON DELETE CASCADE); 
-	
+  ("id" SERIAL PRIMARY KEY, "value" text NOT NULL, 
+  "person" INT REFERENCES users(id) ON DELETE CASCADE); 
+  
 CREATE TABLE IF NOT EXISTS "user_openid"
-	("id" SERIAL PRIMARY KEY, "identity" text UNIQUE NOT NULL, 
-	"person" INT REFERENCES users(id) ON DELETE CASCADE); 
-	
+  ("id" SERIAL PRIMARY KEY, "identity" text UNIQUE NOT NULL, 
+  "person" INT REFERENCES users(id) ON DELETE CASCADE); 
+  
 CREATE TABLE IF NOT EXISTS "statistics"
-	("id" SERIAL PRIMARY KEY, 
-	"person" INT DEFAULT 1 REFERENCES users(id) ON DELETE SET DEFAULT, 
-	"checkin" timestamp, "checkout" timestamp, "service" text[], 
-	"service_opt" text[], "activity" text[], "note" text); 
+  ("id" SERIAL PRIMARY KEY, 
+  "person" INT DEFAULT 1 REFERENCES users(id) ON DELETE SET DEFAULT, 
+  "checkin" timestamp, "checkout" timestamp, "service" text[], 
+  "service_opt" text[], "activity" text[], "note" text); 
 
 -- Default user referenced by the statistics table, if record is deleted:
-INSERT INTO "users" (id, name, surname, locked, join_date, hash) VALUES
-	(1, 'Deleted', 'User', TRUE, NOW(), 'disabled');
+INSERT INTO "users" (name, surname, locked, join_date, hash) VALUES
+  ('Deleted', 'User', TRUE, NOW(), 'disabled');
 UPDATE "users" SET "name" = 'Deleted', "surname" = 'User', locked = TRUE,
-	join_date = NOW(), hash = 'disabled' WHERE id = 1;
+  join_date = NOW(), hash = 'disabled' WHERE id = 1;
 
 INSERT INTO "_meta"("key", "int_value") VALUES ('schema_version', 0);
 UPDATE "_meta" SET "int_value" = 0 WHERE "key" = 'schema_version';
@@ -120,3 +120,11 @@ INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_clock_in', 'Clock in');
 UPDATE "_meta" SET "str_value" = 'Clock in' WHERE "key" = 'kiosk_clock_in';
 INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_clock_out', 'Clock out');
 UPDATE "_meta" SET "str_value" = 'Clock out' WHERE "key" = 'kiosk_clock_out';
+
+-- Enable or disable prompting for activity at check-in:
+INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_activity', 't');
+UPDATE "_meta" SET "str_value" = 't' WHERE "key" = 'kiosk_activity';
+
+-- Enable or disable prompting for service selection at check-in:
+INSERT INTO "_meta"("key", "str_value") VALUES ('kiosk_service', 't');
+UPDATE "_meta" SET "str_value" = 't' WHERE "key" = 'kiosk_service';

@@ -39,7 +39,7 @@
             </thead>
             <tbody>
               {% for result in results %}
-              <tr onclick="document.location = '{{ url_for('selectActivity') }}?id={{ result.id }}&search={{ search }}';">
+              <tr onclick="document.location = '{{ url_for(target) }}?id={{ result.id }}&search={{ search }}';">
                 <td>{{ result.name }}</td>
                 <td>{{ result.surname }}</td>
                 <td>{{ result.home_phone }}</td>
@@ -52,7 +52,7 @@
                   </a>
                 {% else %}
                   <a class="btn btn-primary btn-md" role="button"
-                     href="{{ url_for('selectActivity') }}?id={{ result.id }}&search={{ search }}">
+                     href="{{ url_for(target) }}?id={{ result.id }}&search={{ search }}">
                       {{ kiosk.clock_in }} <span class="glyphicon glyphicon-arrow-right"></span>
                   </a>
                 {% endif %}
