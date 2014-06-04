@@ -262,6 +262,8 @@ class Database:
     corresponding sting names.
     """
     def getActivityNameList(self, IDList):
+        if len(IDList) == 0:
+            return ()
         IDList = tuple(IDList)
         logging.debug("Get activity name list ({0})".format(id))
         a = self.execute("SELECT name FROM activities WHERE id IN %s;", (IDList,))
@@ -359,6 +361,10 @@ class Database:
     def doCheckin(self, person, activities, services, note, services_opt=None):
         if len(services_opt) == 0:
             services_opt = None
+        if len(services) == 0:
+            services = None
+        if len(activities) == 0:
+            activities = None
         a = self.execute("""INSERT INTO statistics
         (person, checkin, service, activity, note, service_opt) VALUES
         (%s, NOW(), %s, %s, %s, %s);""", (person, services, activities, note, services_opt))

@@ -605,9 +605,13 @@ def fetchKioskConstants():
   msg = db.getMeta('kiosk_timeout_message')
   clock_in = db.getMeta('kiosk_clock_in')
   clock_out = db.getMeta('kiosk_clock_out')
+  kiosk_activity = dbBool(db.getMeta('kiosk_activity'))
+  kiosk_service = dbBool(db.getMeta('kiosk_service'))
   return { 'timeout' : timeout, 'timeout_warning' : warning,
             'timeout_title' : title, 'timeout_message' : msg,
-            'clock_in' : clock_in, 'clock_out' : clock_out }
+            'clock_in' : clock_in, 'clock_out' : clock_out,
+            'kiosk_activity' : kiosk_activity, 
+            'kiosk_service' : kiosk_service}
     
 @app.route('/timeclock')
 def timeclock(error=None):
@@ -636,12 +640,19 @@ def timeclockSearch():
     
     kiosk = fetchKioskConstants()
     results_message = db.getMeta('kiosk_results_message')
+    kiosk_activity = dbBool(db.getMeta('kiosk_activity'))
+    kiosk_service = dbBool(db.getMeta('kiosk_service'))
+    target = 'checkinNote'
+    if kiosk_service:
+      target = 'selectService'
+    if kiosk_activity:
+      target = 'selectActivity'
     
     for record in results:
       record['checked_in'] = db.getCheckinStatus(record['id'])
     
   return render_template('checkin-results.html', results_message=results_message,
-        results=results, search = search, kiosk=kiosk)
+        results=results, search = search, kiosk=kiosk,target=target)
   
 @app.route('/clock-out', methods=['GET'])
 def clockOut():
@@ -664,6 +675,11 @@ def selectActivity():
   
   with app.app_context():
     db = get_db()
+    kiosk_activity = db.getMeta('kiosk_activity')
+    if not dbBool(kiosk_activity):  #Skip activity selection if disabled
+      app.logger.debug("Activity selection disabled.  Skipping to service selection")
+      return redirect(url_for('selectServices', ID=ID))
+    
     activities = db.getActivities()
     kiosk = fetchKioskConstants()
     title = db.getMeta('kiosk_activity_title')
@@ -674,16 +690,22 @@ def selectActivity():
   
 @app.route('/select-services', methods=['GET'])
 def selectServices():
-  search = request.args.get('search', '')
-  ID = request.args.get('id', '')
-  #parse and validate selected activities:
-  activities = request.args.getlist("activity")
-  if len(activities) == 0:
-    flash("You must pick at least one activity", "error")
-    return selectActivity()
-    
   with app.app_context():
     db = get_db()
+    kiosk_activity = dbBool(db.getMeta('kiosk_activity'))
+    if not dbBool(db.getMeta('kiosk_service')): #Skip service selection if disabled
+      app.logger.debug("Service selection disabled.  Skipping to note entry")
+      return redirect(url_for('checkinNote'))
+  
+    search = request.args.get('search', '')
+    ID = request.args.get('id', '')
+    #parse and validate selected activities:
+    activities = request.args.getlist("activity")
+    #validate only if activity selection was enabled
+    if len(activities) == 0 and kiosk_activity:
+      flash("You must pick at least one activity", "error")
+      return redirect(url_for('selectActivity', ID=ID))
+    
     services = db.getServices()
     kiosk = fetchKioskConstants()
     title = db.getMeta('kiosk_service_title')
@@ -697,6 +719,7 @@ def selectServices():
 def checkinOptService():
   with app.app_context():
     db = get_db()
+    kiosk_service = dbBool(db.getMeta('kiosk_service'))
     search = request.args.get('search', '')
     ID = request.args.get('id', '')
     activities = request.args.getlist("activity")
@@ -706,7 +729,8 @@ def checkinOptService():
     title = db.getMeta('kiosk_service_opt_title')
     allow_multiple = dbBool(db.getMeta('kiosk_service_opt_allow_multiple'))
     
-    if len(services) == 0:
+    #validate only if service selection was enabled
+    if len(services) == 0 and kiosk_service:
       flash("You must pick at least one service", "error")
       return selectServices()
     
@@ -723,14 +747,16 @@ def checkinNote():
   activities = request.args.getlist("activity")
   services = request.args.getlist("service")
   opt_services = request.args.getlist("opt_services")
-  if len(services) == 0:
-    flash("You must pick at least one service", "error")
-    return selectServices()
     
   with app.app_context():
-    db = get_db()    
+    db = get_db()
+    kiosk_service = dbBool(db.getMeta('kiosk_service'))
     kiosk = fetchKioskConstants()
     title = db.getMeta('kiosk_note_title')
+    
+    if len(services) == 0 and kiosk_service:
+      flash("You must pick at least one service", "error")
+      return selectServices()
     
   return render_template('checkin-note.html', kiosk=kiosk, title=title, id=ID, search=search,
                   activities=activities, services=services, opt_services=opt_services)

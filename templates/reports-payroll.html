@@ -1,0 +1,118 @@
+{% extends "reports.html" %}
+{% import 'widgets.html' as widgets %}
+
+{% block parameters %}
+
+  <form class="form-horizontal" role="form" method="GET" id="parameters"
+   action="{{ url_for('reportBuild', name='attendance') }}">
+    <div class="form-group">
+      <div class="col-md-4">
+        <div class="row">
+          <div class="col-md-5">
+            <label class="control-label" for="reportdate">Report&nbsp;Date</label>
+          </div>
+          <div class="col-md-7">
+            <input class="form-control" type="text" id="reportdate" name="reportdate" 
+             placeholder="YYYY-MM-DD" value="{{ args.get('reportdate', '') }}">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+          {%- if init != None -%}
+            <strong>Recent dates</strong>
+            <ul>
+              {%- for date in init.datelist[0:5] -%}
+                <li><a href="{{ url_for('reportBuild', name='payroll') }}?reportdate={{ date }}">{{ date }}</a></li>
+              {%- endfor -%}
+            </ul>
+          </div>
+          <div class="col-md-6">
+            &nbsp;
+            <ul>
+              {%- for date in init.datelist[5:10] -%}
+                <li><a href="{{ url_for('reportBuild', name='payroll') }}?reportdate={{ date }}">{{ date }}</a></li>
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+          </div>
+        </div>
+      </div>
+    </div>    
+    
+    <div class="form-group">
+      <div class="col-md-2 col-md-offset-1">
+        <button class="btn btn-primary btn-block" type="submit">Submit</button>
+      </div>
+    </div>
+  </form>
+  
+  <script>
+    $(function() {
+      $( "#reportdate" ).datepicker({
+         changeMonth: true,
+         changeYear: true,
+         dateFormat: 'yy-mm-dd',
+         date: "now",
+         showButtonPanel: true
+        });
+    });
+  </script>
+{% endblock %}
+
+{% block output %}
+  {% if output != None and output|length > 0 %}
+  {% set table = output[0] %}
+  {% set count = output[1] %}
+  
+  <p>
+    <strong>Total:</strong> {{ count }}
+      {% if count == 1 -%}
+        person
+      {% else %}
+        people
+      {% endif %}
+  </p>
+  
+  <h2>Payroll Report</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>Check-in</th><th>Check-out</th><th>Time Worked</th></tr>
+    </thead>
+    <tbody>
+      {% for row in table %}
+      <tr>
+        <td><a href="{{ url_for('displayRecord', id=row.person) }}">
+          {{ row.name }} {{ row.surname }}
+        </a></td>
+        <td>
+          {{ row.checkin|strftime }}
+        </td>
+        <td>
+          {{ row.checkout|strftime }}
+        </td>
+        <td>
+          {% if row.time %}
+            {{ row.time|timedelta }}
+          {% else %}
+            (Missing Punch)
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+    {% if table|length == 0 %}
+      <p>No results</p>
+    {% endif %}
+  {% else %}
+  <p>Review parameters before submitting report.</p>
+    {% if output == None %}
+      <script>
+        $(function() {
+          $("#reportdate").datepicker('setDate', new Date());
+        });
+      </script>
+    {% endif %}
+  {% endif %}
+{% endblock %}

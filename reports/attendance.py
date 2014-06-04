@@ -43,6 +43,7 @@ def build(db=None, request=None):
     
   counts = {}
   output = {}
+  checkins = {}
   #Fetch order by activity for each service:
   for service in services:
     a = db.execute("""SELECT person, users.name, users.surname, statistics.activity,
@@ -54,17 +55,28 @@ def build(db=None, request=None):
       (date, service, activities))
     output[service] = db.getNestedDictionary(a)
     
-    a = db.execute("""SELECT COUNT(person) FROM statistics WHERE 
+    a = db.execute("""SELECT COUNT(DISTINCT person) FROM statistics WHERE 
         %s = DATE(checkin) AND
         %s = ANY(service) AND
         activity && %s;""", (date, service, activities))
     counts[service] = a[0][0]
     
-  a = db.execute("""SELECT COUNT(person) FROM statistics WHERE 
+    # Number of check-in's (one person checking into two services shows up twice)
+    a = db.execute("""SELECT COUNT(DISTINCT person) FROM statistics WHERE 
+          %s = DATE(checkin) AND
+          %s = ANY(service) AND
+          activity && %s;""", (date, service, activities))
+    counts[service] = a[0][0]
+    
+  a = db.execute("""SELECT COUNT(DISTINCT person) FROM statistics WHERE 
         %s = DATE(checkin);""", (date,))
   counts['__total__'] = a[0][0]
     
-  return output, counts
+  a = db.execute("""SELECT COUNT(person) FROM statistics WHERE 
+        %s = DATE(checkin);""", (date,))
+  checkins['__total__'] = a[0][0]
+    
+  return output, counts, checkins
 
 def build_csv(results, csvfile):
   csvwriter = csv.DictWriter(csvfile, delimiter=',', quotechar='"', 
