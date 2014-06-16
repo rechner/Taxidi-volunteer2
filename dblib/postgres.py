@@ -371,6 +371,11 @@ class Database:
         a = self.execute("""UPDATE users SET last_seen = now() WHERE
         id = %s""", (person,))
         
+    def doCustomCheckin(self, person, start, end=None):
+        a = self.execute("""INSERT INTO statistics
+        (person, checkin, checkout) VALUES
+        (%s, %s::timestamp, %s::timestamp);""", (person, start, end))
+        
     def doCheckout(self, person):
         a = self.execute("""UPDATE statistics SET checkout = NOW() WHERE
         person = %s AND checkin >= current_date 
@@ -385,7 +390,27 @@ class Database:
             return True
         else:
             return False
-    
+            
+    def editCheckinTime(self, id, time):
+        a = self.execute("""UPDATE statistics SET checkin = 
+        ((SELECT DATE("checkin") FROM statistics WHERE id = %s) || ' ' || %s)::timestamp
+        WHERE id = %s""", (str(id), time, str(id)))
+        
+        
+    def editCheckoutTime(self, id, time):
+        a = self.execute("""UPDATE statistics SET checkout = 
+        ((SELECT DATE("checkin") FROM statistics WHERE id = %s) || ' ' || %s)::timestamp
+        WHERE id = %s""", (str(id), time, str(id)))
+        
+    def deleteCheckin(self, id):
+        a = self.execute("DELETE FROM statistics WHERE id = %s", (id,))
+        
+    def getTimeWorked(self, id):
+        a = self.execute("""SELECT checkout - checkin AS time
+        FROM statistics WHERE id = %s""", (id,))
+        ret = self.getNestedDictionary(a)
+        return ret[0]['time']
+        
     #=== Users ===
     #==== CRUD ====
     def userCount(self):

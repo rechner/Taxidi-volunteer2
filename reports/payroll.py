@@ -20,7 +20,7 @@ def build(db=None, request=None):
   if request is None or db is None or date is None:
     return None
     
-  a = db.execute("""SELECT person, users.name, users.surname, 
+  a = db.execute("""SELECT statistics.id, person, users.name, users.surname, 
       checkin, checkout, checkout - checkin AS time
     FROM statistics JOIN users ON 
       users.id = statistics.person WHERE %s = DATE(checkin)

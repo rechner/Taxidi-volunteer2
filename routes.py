@@ -144,6 +144,86 @@ def edit_activities_ajax():
       except database.IntegrityError:
         return make_response('Name is already in use.'), 400
   return make_response('Expected "name", "admin" for name, but got "{0}" instead'.format(name)), 400
+  
+@app.route('/admin/reports_endpoint/payroll/edit', methods=['POST'])
+@login_required
+def edit_payroll_ajax():
+  id = request.form.get('pk', None)
+  name = request.form.get('name', None)
+  value = request.form.get('value', None)
+  
+  if not re.match('^(?:\d|[01]\d|2[0-3]):[0-5]\d$', value):
+    return make_response('Invalid time format.  Please use 24-hour time format.'), 400
+  
+  with app.app_context():
+    try:
+      db = get_db()
+      if name == 'checkin':
+        db.editCheckinTime(id, value)
+      elif name == 'checkout':
+        db.editCheckoutTime(id, value)
+      db.commit()
+      #~ return make_response('OK'), 200
+      time = _jinja2_filter_timedelta(db.getTimeWorked(id))
+      response = make_response(json.dumps({ 'id' : id, 'time' : time }))
+      response.headers['Content-Type'] = 'application/json; charset=utf-8'
+      return response
+    except database.DatabaseError:
+      return make_response('Error while updating database'), 400
+        
+  return make_response('Invalid parameters'), 400
+  
+@app.route('/admin/reports_endpoint/payroll/add', methods=['POST'])
+@login_required
+def add_payroll():
+  date = request.form.get('date', None)
+  person = request.form.get('id', None)
+  next = request.form.get('next', None)
+  start = request.form.get('start', None)
+  end = request.form.get('end', None)
+  
+  if date is None:
+    flash("Date field is required", "error")
+    return redirect(next)
+  if person is None:
+    flash("You must type in and autocomplete a name to add a punch", "error")
+    return redirect(next)  
+  
+  with app.app_context():
+    try:
+      db = get_db()
+      if end is None:
+        db.doCustomCheckin(person, date+' '+start)
+      else:
+        db.doCustomCheckin(person, date+' '+start, date+' '+end)
+      db.commit()
+    except database.DatabaseError:
+      flash("Problem while adding row to database.", "error")
+      
+  return redirect(next)
+  
+@app.route('/admin/reports_endpoint/payroll/delete', methods=['POST'])
+@login_required
+def delete_punch():
+  id = request.form.get('id', None)
+  next = request.form.get('next', None)
+  
+  if id is not None:
+    with app.app_context():
+      try:
+        db = get_db()
+        db.deleteCheckin(id)
+        db.commit()
+        return redirect(next)
+      except database.DatabaseError:
+        return abort('400')
+        
+@app.route('/admin/reports_endpoint/payroll/time/<id>')
+@login_required
+def payroll_timedelta(id):
+  with app.app_context():
+    db = get_db()
+    return db.getTimeWorked(id)
 
 @app.route('/admin')
 @login_required
@@ -283,7 +363,7 @@ def reportBuild(name):
       if output is not None:
         if len(output) > 0:
           show_actions = True
-      app.logger.debug("OUTPUT: {0}".format(output))
+      #~ app.logger.debug("OUTPUT: {0}".format(output))
     except ImportError:
       return abort(404)
       
@@ -847,12 +927,16 @@ def teardown_request(exception):
     
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt=None):
+  if not hasattr(date, 'replace') and not hasattr(date, 'strftime'):
+    return None
   native = date.replace(tzinfo=None)
   format='%H:%M'  #TODO: i18n
   return native.strftime(format) 
   
 @app.template_filter('timedelta')
 def _jinja2_filter_timedelta(timedelta):
+  if not isinstance(timedelta, datetime.timedelta):
+    return None
   hours, remainder = divmod(timedelta.seconds, 3600)
   minutes, seconds = divmod((timedelta.seconds - (3600*hours)), 60)
   return '%s:%02d:%02d' % (hours, minutes, seconds)
