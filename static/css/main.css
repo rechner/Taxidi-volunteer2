@@ -144,3 +144,7 @@ textarea {
   margin-right: auto;
   display: block;
 }
+
+.time-input {
+  width: 100px !important;
+}

@@ -1,0 +1,58 @@
+{% extends "printout.html" %}
+
+{% block title -%}
+  Payroll Report for {{ args.get('reportdate', '') }}
+{%- endblock %}
+
+{% block body %}
+  {% if output != None and output|length > 0 %}
+  {% set table = output[0] %}
+  {% set count = output[1] %}
+  
+  <p>
+    <h1>Payroll Report {{ args.reportdate }}</h1>
+    <strong>Total:</strong> {{ count }}
+      {% if count == 1 -%}
+        person
+      {% else %}
+        people
+      {% endif %}
+  </p>
+  
+  <h2>Payroll Report</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>Check-in</th><th>Check-out</th><th>Time Worked</th></tr>
+    </thead>
+    <tbody>
+      {% for row in table %}
+      <tr>
+        <td>{{ row.name }} {{ row.surname }}</td>
+        <td>
+          {{ row.checkin|strftime }}
+        </td>
+        <td>
+          {{ row.checkout|strftime }}
+        </td>
+        <td>
+          <span id="work-time-{{ row.id }}">
+            {% if row.time %}
+              {{ row.time|timedelta }}
+            {% else %}
+              (Missing Punch)
+            {% endif %}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+    {% if table|length == 0 %}
+      <p>No results</p>
+    {% endif %}
+  {% else %}
+  <p>Review parameters before submitting report.</p>
+  {% endif %}
+ 
+{% endblock %}

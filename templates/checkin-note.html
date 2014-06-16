@@ -65,5 +65,9 @@
     </div>
   </div>
   
+  <script>
+    $('form').preventDoubleSubmission();
+  </script>
+  
  {{ timeout.timeout(kiosk.timeout, kiosk.timeout_warning, title=kiosk.timeout_title, message=kiosk.timeout_message) }}
 {% endblock %}

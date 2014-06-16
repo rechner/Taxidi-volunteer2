@@ -1,10 +1,15 @@
 {% extends "reports.html" %}
 {% import 'widgets.html' as widgets %}
+{% block head %}
+  <!-- bootstrap editable widget -->
+  <link href="{{ url_for('static', filename='css/bootstrap-editable.css') }}" rel="stylesheet">
+  <script src="{{ url_for('static', filename='js/bootstrap-editable.js') }}"></script>
+{% endblock %}
 
 {% block parameters %}
 
   <form class="form-horizontal" role="form" method="GET" id="parameters"
-   action="{{ url_for('reportBuild', name='attendance') }}">
+   action="{{ url_for('reportBuild', name='payroll') }}">
     <div class="form-group">
       <div class="col-md-4">
         <div class="row">
@@ -53,6 +58,16 @@
          changeYear: true,
          dateFormat: 'yy-mm-dd',
          date: "now",
+         showButtonPanel: true,
+         onSelect: function(selectedDate){ 
+           $("#add_date").val(selectedDate);
+         }
+        });
+      $( "#add_date" ).datepicker({
+         changeMonth: true,
+         changeYear: true,
+         dateFormat: 'yy-mm-dd',
+         date: $("#reportdate").val(),
          showButtonPanel: true
         });
     });
@@ -76,7 +91,7 @@
   <h2>Payroll Report</h2>
   <table class="table table-striped">
     <thead>
-      <tr><th>Name</th><th>Check-in</th><th>Check-out</th><th>Time Worked</th></tr>
+      <tr><th>Name</th><th>Check-in</th><th>Check-out</th><th>Time Worked</th><th></th></tr>
     </thead>
     <tbody>
       {% for row in table %}
@@ -85,17 +100,39 @@
           {{ row.name }} {{ row.surname }}
         </a></td>
         <td>
-          {{ row.checkin|strftime }}
+          <a class="editable-time" data-type="text" data-name="checkin"
+           data-url="{{ url_for('edit_payroll_ajax') }}" data-inputclass="time-input"
+           data-pk="{{ row.id }}" data-title="Edit punch start"
+           title="Check-in time (24-hour format)">
+            {{ row.checkin|strftime }}
+          </a>
         </td>
         <td>
-          {{ row.checkout|strftime }}
+          <a class="editable-time" data-type="text" data-name="checkout"
+           data-url="{{ url_for('edit_payroll_ajax') }}" data-inputclass="time-input"
+           data-pk="{{ row.id }}" data-title="Edit punch end"
+           title="Check-out time (24-hour format)">
+            {{ row.checkout|strftime }}
+          </a>
         </td>
         <td>
-          {% if row.time %}
-            {{ row.time|timedelta }}
-          {% else %}
-            (Missing Punch)
-          {% endif %}
+          <span id="work-time-{{ row.id }}">
+            {% if row.time %}
+              {{ row.time|timedelta }}
+            {% else %}
+              (Missing Punch)
+            {% endif %}
+          </span>
+        </td>
+        <td>
+          <form method="POST" class="delete-punch" name="delete-punch-{{ row.id }}"
+           action="{{ url_for('delete_punch') }}">
+            <input type="hidden" name="id" value="{{ row.id }}">
+            <input type="hidden" name="next" value="{{ request.url }}">
+            <button type="submit" class="btn btn-danger btn-xs" title="Delete punch">
+              <i class="glyphicon glyphicon-remove"></i>
+            </button>
+          </form>
         </td>
       </tr>
       {% endfor %}
@@ -115,4 +152,67 @@
       </script>
     {% endif %}
   {% endif %}
+  
+  <!-- add punch form -->
+  <form class="form-inline" role="form" method="POST"
+   action="{{ url_for('add_payroll') }}">
+    <input type="hidden" id="add_name_id" name="id" value="">
+    <input type="hidden" name="next" value="{{ request.url }}">
+    <div class="form-group">
+      <input class="form-control time-input" type="text" id="add_date" name="date" 
+       placeholder="YYYY-MM-DD" value="{{ args.get('reportdate', '') }}"
+       required>
+    </div>
+    <div class="form-group">
+      <label for="add_name" class="sr-only">Name</label>
+      <input type="text" id="add_name" name="name" required
+       class="form-control" placeholder="Name">
+    </div>
+    <div class="form-group">
+      <label for="add_start" class="sr-only">Start Time</label>
+      <input type="text" id="add_start" name="start" required
+       class="form-control time-input" placeholder="Start">
+    </div>
+    <div class="form-group">&ndash;</div>
+    <div class="form-group">
+      <label for="add_end" class="sr-only">End Time</label>
+      <input type="text" id="add_end" name="end"
+       class="form-control time-input" placeholder="End">
+    </div>
+    <button type="submit" class="btn btn-success">
+      <i class="glyphicon glyphicon-plus-sign"></i> Add Punch
+    </button>
+  </form>
+  
+  <script>
+  $(function() {
+    $('.editable-time').editable({
+      success: function(response, newValue) {
+        $('#work-time-'+response.id).hide().html(response.time).fadeIn();
+      }
+    });
+    
+    $("#add_name").autocomplete({
+      source: "{{ url_for('autocomplete_names') }}",
+      minLength: 2,
+      select: function( event, ui ) {
+        $("#add_name_id").attr("value", ui.item.id);
+        $("#add_name").parent().removeClass("has-error").addClass("has-success");
+      },
+    });
+    /*$("#add_name").keyup(function () {
+      $("#add_name").parent().removeClass("has-success").addClass("has-error");
+    });*/
+    
+    $(".delete-punch").submit(function() {
+      var c = confirm("Are you sure you want to delete this punch?\n" +
+                      "This action cannot be undone.");
+      return c; //you can just return c because it will be true or false
+    });
+    
+    $("#add_start").mask("99:99");
+    $("#add_end").mask("99:99");
+  });
+  </script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.maskedinput.min.js') }}"></script>
 {% endblock %}
