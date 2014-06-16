@@ -47,12 +47,16 @@ def build_csv(results, csvfile):
     csvwriter.writerow(row)
     
 def strftime(date):
+  if date is None:
+    return "None"
   native = date.replace(tzinfo=None)
   format='%H:%M'  #TODO: i18n
   return native.strftime(format) 
 
 def strfdelta(tdelta, fmt):
-    d = {"days": tdelta.days}
-    d["hours"], rem = divmod(tdelta.seconds, 3600)
-    d["minutes"], d["seconds"] = divmod(rem, 60)
-    return fmt.format(**d)
+  if tdelta is None:
+    return "None"
+  d = {"days": tdelta.days}
+  d["hours"], rem = divmod(tdelta.seconds, 3600)
+  d["minutes"], d["seconds"] = divmod(rem, 60)
+  return fmt.format(**d)
