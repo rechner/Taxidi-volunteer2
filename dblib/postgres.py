@@ -398,9 +398,13 @@ class Database:
         
         
     def editCheckoutTime(self, id, time):
-        a = self.execute("""UPDATE statistics SET checkout = 
-        ((SELECT DATE("checkin") FROM statistics WHERE id = %s) || ' ' || %s)::timestamp
-        WHERE id = %s""", (str(id), time, str(id)))
+        if time is None:
+            a = self.execute("""UPDATE statistics SET checkout = %s
+            WHERE id = %s""", (None, str(id)))
+        else:
+            a = self.execute("""UPDATE statistics SET checkout = 
+            ((SELECT DATE("checkin") FROM statistics WHERE id = %s) || ' ' || %s)::timestamp
+            WHERE id = %s""", (str(id), time, str(id)))
         
     def deleteCheckin(self, id):
         a = self.execute("DELETE FROM statistics WHERE id = %s", (id,))

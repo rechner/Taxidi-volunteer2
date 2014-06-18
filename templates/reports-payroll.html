@@ -189,6 +189,9 @@
     $('.editable-time').editable({
       success: function(response, newValue) {
         $('#work-time-'+response.id).hide().html(response.time).fadeIn();
+        if (response.time == null) {
+          $('#work-time-'+response.id).hide().html('(Missing Punch)').fadeIn();
+        }
       }
     });
     

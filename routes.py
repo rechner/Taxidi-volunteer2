@@ -151,9 +151,15 @@ def edit_payroll_ajax():
   id = request.form.get('pk', None)
   name = request.form.get('name', None)
   value = request.form.get('value', None)
+  error_msg = 'Invalid time format.  Please use 24-hour time format.'
   
-  if not re.match('^(?:\d|[01]\d|2[0-3]):[0-5]\d$', value):
-    return make_response('Invalid time format.  Please use 24-hour time format.'), 400
+  if not re.match('^(?:\d|[01]\d|2[0-3]):[0-5]\d$', value) and value.lower() != 'none':
+    if name == 'checkout':
+      error_msg += ' To delete a checkout punch, enter "none".'
+    return make_response(error_msg), 400
+  
+  if value.lower() == 'none':
+    value = None
   
   with app.app_context():
     try:
