@@ -5,9 +5,9 @@ import platform
 class Config(object):
     DB_HOSTNAME = "localhost"
     DB_PORT = 5432
-    DB_NAME = "volunteers"
-    DB_USER = "volunteers"
-    DB_PASSWORD = "lamepass" #GITIGNORE
+    DB_NAME = "preschool"
+    DB_USER = "preschool_timeclock"
+    DB_PASSWORD = "shoulder cold bark breathing" #GITIGNORE
 
     PG_DUMP = "/usr/bin/pg_dump"
     PG_PSQL = "/usr/bin/psql"
