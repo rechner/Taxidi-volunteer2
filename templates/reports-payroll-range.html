@@ -1,0 +1,225 @@
+{% extends "reports.html" %}
+{% import 'widgets.html' as widgets %}
+{% block head %}
+  <!-- bootstrap editable widget -->
+  <link href="{{ url_for('static', filename='css/bootstrap-editable.css') }}" rel="stylesheet">
+  <script src="{{ url_for('static', filename='js/bootstrap-editable.js') }}"></script>
+{% endblock %}
+
+{% block parameters %}
+  <p>
+     Produces an aggregate payroll report for a given date range.
+     Be sure to check for missing punches before running report.
+  </p>
+  <form class="form-horizontal" role="form" method="GET" id="parameters"
+   action="{{ url_for('reportBuild', name='payroll-range') }}">
+    <div class="form-group">
+      <div class="col-md-2">
+        <label class="control-label" for="reportdate">Date Range</label>
+      </div>
+      <div class="col-md-3">
+        <input class="form-control" type="text" id="startdate" name="startdate" 
+         placeholder="YYYY-MM-DD" value="{{ args.get('startdate', '') }}">
+      </div>
+      <div class="col-md-4" style="padding-left: 5px;">
+        <div class="col-md-1" style="padding-left: 0px;">
+          <label for="enddate">to</label>
+        </div>
+        <div class="col-md-10">
+          <input class="form-control" type="text" id="enddate" name="enddate"
+          placeholder="YYYY-MM-DD" value="{{ args.get('enddate', '') }}">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary submit_wait" type="submit">Submit</button>
+        <div></div> <!-- please wait message goes here-->
+      </div>
+    </div>
+  </form>
+  
+  <script>
+   $(function() {
+      $( ".submit_wait").on("click", function () {
+        $(this).next().html("Processing <img src=\"{{ url_for('static', filename='img/ajax-loader.gif') }}\">");
+      });
+      $( document ).tooltip();
+      $( "#startdate" ).datepicker({
+        changeMonth: true,
+        dateFormat: 'yy-mm-dd',
+        defaultDate: "-2w",
+        numberOfMonths: 2,
+        onClose: function( selectedDate ) {
+          $( "#enddate" ).datepicker( "option", "minDate", selectedDate );
+        }
+      });
+      $( "#enddate" ).datepicker({
+        changeMonth: true,
+        dateFormat: 'yy-mm-dd',
+        defaultDate: "+1w",
+        numberOfMonths: 2,
+        onClose: function( selectedDate ) {
+          $( "#startdate" ).datepicker( "option", "maxDate", selectedDate );
+        }
+      });
+    });
+  </script>
+{% endblock %}
+
+{% block output %}
+  {% if output != None and output|length > 0 %}
+  {% set table = output[0] %}
+  {% set missing_punches = output[1] %}
+  
+  {% if missing_punches != None and missing_punches|length > 0 %}
+    <h2>Missing Punches</h2>
+    <p>Missing punches must be corrected before being reflected in the payroll report.</p>
+    <table class="table table-striped">
+      <thead>
+        <tr><th>Name</th><th>Check-in</th><th>Check-out</th><th>Time Worked</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for row in missing_punches %}
+        <tr>
+          <td><a href="{{ url_for('displayRecord', id=row.person) }}">
+            {{ row.name }} {{ row.surname }}
+          </a></td>
+          <td>
+            <a class="editable-time" data-type="text" data-name="checkin"
+             data-url="{{ url_for('edit_payroll_ajax') }}" data-inputclass="time-input"
+             data-pk="{{ row.id }}" data-title="Edit punch start"
+             title="Check-in time (24-hour format)">
+              {{ row.checkin|strftime }}
+            </a>
+          </td>
+          <td>
+            <a class="editable-time" data-type="text" data-name="checkout"
+             data-url="{{ url_for('edit_payroll_ajax') }}" data-inputclass="time-input"
+             data-pk="{{ row.id }}" data-title="Edit punch end"
+             title="Check-out time (24-hour format)">
+              {{ row.checkout|strftime }}
+            </a>
+          </td>
+          <td>
+            <span id="work-time-{{ row.id }}">
+              {% if row.time %}
+                {{ row.time|timedelta }}
+              {% else %}
+                (Missing Punch)
+              {% endif %}
+            </span>
+          </td>
+          <td>
+            <form method="POST" class="delete-punch" name="delete-punch-{{ row.id }}"
+             action="{{ url_for('delete_punch') }}">
+              <input type="hidden" name="id" value="{{ row.id }}">
+              <input type="hidden" name="next" value="{{ request.url }}">
+              <button type="submit" class="btn btn-danger btn-xs" title="Delete punch">
+                <i class="glyphicon glyphicon-remove"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  
+  <!-- add punch form -->
+  <form class="form-inline" role="form" method="POST"
+   action="{{ url_for('add_payroll') }}">
+    <input type="hidden" id="add_name_id" name="id" value="">
+    <input type="hidden" name="next" value="{{ request.url }}">
+    <div class="form-group">
+      <input class="form-control time-input" type="text" id="add_date" name="date" 
+       placeholder="YYYY-MM-DD" value="{{ args.get('reportdate', '') }}"
+       required>
+    </div>
+    <div class="form-group">
+      <label for="add_name" class="sr-only">Name</label>
+      <input type="text" id="add_name" name="name" required
+       class="form-control" placeholder="Name">
+    </div>
+    <div class="form-group">
+      <label for="add_start" class="sr-only">Start Time</label>
+      <input type="text" id="add_start" name="start" required
+       class="form-control time-input" placeholder="Start">
+    </div>
+    <div class="form-group">&ndash;</div>
+    <div class="form-group">
+      <label for="add_end" class="sr-only">End Time</label>
+      <input type="text" id="add_end" name="end"
+       class="form-control time-input" placeholder="End">
+    </div>
+    <button type="submit" class="btn btn-success">
+      <i class="glyphicon glyphicon-plus-sign"></i> Add Punch
+    </button>
+  </form>
+  
+  <h2>Payroll Report</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>Time Worked</th></tr>
+    </thead>
+    <tbody>
+      {% for row in table %}
+      <tr>
+        <td><a href="{{ url_for('displayRecord', id=row.id) }}">
+          {{ row.name }} {{ row.surname }}
+        </a></td>
+        <td>
+          <span id="work-time-{{ row.id }}">
+            {{ row.time }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+    {% if table|length == 0 %}
+      <p>No results</p>
+    {% endif %}
+  {% else %}
+  <p>Review parameters before submitting report.</p>
+    {% if output == None %}
+      <script>
+        $(function() {
+          $("#reportdate").datepicker('setDate', new Date());
+        });
+      </script>
+    {% endif %}
+  {% endif %}
+  
+  
+  <script>
+  $(function() {
+    $('.editable-time').editable({
+      success: function(response, newValue) {
+        $('#work-time-'+response.id).hide().html(response.time).fadeIn();
+      }
+    });
+    
+    $("#add_name").autocomplete({
+      source: "{{ url_for('autocomplete_names') }}",
+      minLength: 2,
+      select: function( event, ui ) {
+        $("#add_name_id").attr("value", ui.item.id);
+        $("#add_name").parent().removeClass("has-error").addClass("has-success");
+      },
+    });
+    /*$("#add_name").keyup(function () {
+      $("#add_name").parent().removeClass("has-success").addClass("has-error");
+    });*/
+    
+    $(".delete-punch").submit(function() {
+      var c = confirm("Are you sure you want to delete this punch?\n" +
+                      "This action cannot be undone.");
+      return c; //you can just return c because it will be true or false
+    });
+    
+    $("#add_start").mask("99:99");
+    $("#add_end").mask("99:99");
+  });
+  </script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.maskedinput.min.js') }}"></script>
+{% endblock %}

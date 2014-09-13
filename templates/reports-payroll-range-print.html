@@ -1,0 +1,73 @@
+{% extends "printout.html" %}
+
+{% block title -%}
+  Payroll Report for {{ args.get('startdate', '?') }} - {{ args.get('enddate', '?') }}
+{%- endblock %}
+
+{% block body %}
+  {% if output != None and output|length > 0 %}
+  {% set table = output[0] %}
+  {% set missing_punches = output[1] %}
+  
+  <h1>Payroll {{ args.startdate }} - {{ args.enddate }}</h1>
+  
+  {% if missing_punches|length > 0 %}
+    <h2>Missing Punches</h2>
+    <table class="table table-striped">
+      <thead>
+        <tr><th>Name</th><th>Check-in</th><th>Check-out</th><th>Time Worked</th></tr>
+      </thead>
+      <tbody>
+        {% for row in missing_punches %}
+        <tr>
+          <td>{{ row.name }} {{ row.surname }}</td>
+          <td>
+            {{ row.checkin|strftime }}
+          </td>
+          <td>
+            {{ row.checkout|strftime }}
+          </td>
+          <td>
+            <span id="work-time-{{ row.id }}">
+              {% if row.time %}
+                {{ row.time|timedelta }}
+              {% else %}
+                (Missing Punch)
+              {% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+  
+  <h2>Payroll Report</h2>
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Name</th><th>Time Worked</th></tr>
+    </thead>
+    <tbody>
+      {% for row in table %}
+      <tr>
+        <td><a href="{{ url_for('displayRecord', id=row.id) }}">
+          {{ row.name }} {{ row.surname }}
+        </a></td>
+        <td>
+          <span id="work-time-{{ row.id }}">
+            {{ row.time }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+    {% if table|length == 0 %}
+      <p>No results</p>
+    {% endif %}
+  {% else %}
+  <p>Review parameters before submitting report.</p>
+  {% endif %}
+ 
+{% endblock %}
