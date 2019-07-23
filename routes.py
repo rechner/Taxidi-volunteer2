@@ -9,7 +9,6 @@ from flask import Flask, Response, render_template, request, session, g
 from flask import flash, abort, redirect, url_for, get_flashed_messages
 from flask import Markup, make_response
 from flask import json, jsonify
-from flask_sslify import SSLify
 from contextlib import closing
 import re
 import datetime, dateutil
@@ -22,7 +21,6 @@ from dblib import postgres as database
 import reports.init as report_plugins
 
 app = Flask(__name__)
-sslify = SSLify(app)
 app.config.from_object("config.DevelopmentConfig")
 
 #Login decorator:
@@ -778,13 +776,14 @@ def selectActivity():
 def selectServices():
   with app.app_context():
     db = get_db()
+    search = request.args.get('search', '')
+    ID = request.args.get('id', '')
+    activity = request.args.get('activity', '')
     kiosk_activity = dbBool(db.getMeta('kiosk_activity'))
     if not dbBool(db.getMeta('kiosk_service')): #Skip service selection if disabled
       app.logger.debug("Service selection disabled.  Skipping to note entry")
-      return redirect(url_for('checkinNote'))
+      return redirect(url_for('checkinNote', id=ID, search=search, activity=activity))
   
-    search = request.args.get('search', '')
-    ID = request.args.get('id', '')
     #parse and validate selected activities:
     activities = request.args.getlist("activity")
     #validate only if activity selection was enabled
@@ -972,5 +971,5 @@ class DatetimeJSONEncoder(json.JSONEncoder):
 app.json_encoder = DatetimeJSONEncoder
 
 if __name__ == "__main__":
-  #~ app.run(host='0.0.0.0')
-  app.run()
+  app.run(host='0.0.0.0')
+  #app.run()
